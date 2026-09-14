@@ -1,0 +1,45 @@
+name: Aria Freelancer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "jobs/*.json"
+
+permissions:
+  contents: write
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Process client jobs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+        run: python agent.py
+
+      - name: Save completed jobs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add jobs outputs
+
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: process freelancer jobs"
+            git push
+          fi
