@@ -1,6 +1,6 @@
 {
   "id": "router-integration-001",
-  "status": "pending",
+  "status": "completed",
   "brief": "برای یک کسب‌وکار کوچک، یک بسته محتوای آزمایشی فارسی تولید کن. لحن حرفه‌ای و طبیعی باشد و هیچ ادعای واقعی یا آماری که نیاز به منبع دارد مطرح نکن.",
   "platform": "Instagram",
   "language": "Persian",
@@ -13,5 +13,6 @@
     "3 کپشن کوتاه و آماده انتشار",
     "3 ایده استوری"
   ],
-  "review_required": true
+  "review_required": true,
+  "output": "outputs/router-integration-001.md"
 }
