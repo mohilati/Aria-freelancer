@@ -6,17 +6,30 @@ from pathlib import Path
 import httpx
 
 
+# =========================
+# CONFIG
+# =========================
+
 BASE = os.getenv(
     "GEMINI_BASE_URL",
-    "https://generativelanguage.googleapis.com/v1beta",
+    "https://generativelanguage.googleapis.com/v1beta"
 )
 
 MODEL = os.getenv(
     "GEMINI_MODEL",
-    "gemini-2.5-flash",
+    "gemini-3.5-flash-lite"
 )
 
-API_KEY = os.getenv("GEMINI_API_KEY", "")
+FALLBACK_MODEL = os.getenv(
+    "GEMINI_FALLBACK_MODEL",
+    "gemini-2.5-flash-lite"
+)
+
+API_KEY = os.getenv(
+    "GEMINI_API_KEY",
+    ""
+).strip()
+
 
 ROOT = Path(__file__).parent
 JOBS = ROOT / "jobs"
@@ -25,6 +38,10 @@ OUT = ROOT / "outputs"
 JOBS.mkdir(exist_ok=True)
 OUT.mkdir(exist_ok=True)
 
+
+# =========================
+# SYSTEM PROMPT
+# =========================
 
 SYSTEM = """
 You are Aria Freelancer, a professional AI content specialist.
@@ -46,11 +63,21 @@ Rules:
 """
 
 
-def call_gemini(prompt: str) -> str:
-    if not API_KEY:
-        raise RuntimeError("GEMINI_API_KEY is missing")
+# =========================
+# GEMINI
+# =========================
 
-    url = f"{BASE}/models/{MODEL}:generateContent"
+def call_model(model: str, prompt: str) -> str:
+
+    if not API_KEY:
+        raise RuntimeError(
+            "GEMINI_API_KEY is missing"
+        )
+
+    url = (
+        f"{BASE}/models/"
+        f"{model}:generateContent"
+    )
 
     headers = {
         "Content-Type": "application/json",
@@ -81,38 +108,126 @@ def call_gemini(prompt: str) -> str:
         },
     }
 
-    with httpx.Client(timeout=60) as client:
+    with httpx.Client(
+        timeout=60
+    ) as client:
+
         response = client.post(
             url,
             headers=headers,
-            json=payload,
+            json=payload
         )
 
-        response.raise_for_status()
+        if response.status_code >= 400:
+
+            body = response.text[:1000]
+
+            raise RuntimeError(
+                f"Gemini HTTP "
+                f"{response.status_code}: "
+                f"{body}"
+            )
 
         data = response.json()
 
     try:
+
         return (
-            data["candidates"][0]["content"]["parts"][0]["text"]
+            data["candidates"][0]
+            ["content"]["parts"][0]
+            ["text"]
             .strip()
         )
-    except (KeyError, IndexError, TypeError) as exc:
+
+    except (
+        KeyError,
+        IndexError,
+        TypeError
+    ) as exc:
+
         raise RuntimeError(
-            f"Unexpected Gemini response: {json.dumps(data, ensure_ascii=False)[:2000]}"
+            "Unexpected Gemini response: "
+            + json.dumps(
+                data,
+                ensure_ascii=False
+            )[:2000]
         ) from exc
 
 
-def process(job_file: Path) -> Path:
-    job = json.loads(
-        job_file.read_text(encoding="utf-8")
+def call_gemini(prompt: str) -> str:
+
+    models = []
+
+    for model in (
+        MODEL,
+        FALLBACK_MODEL,
+    ):
+
+        if model and model not in models:
+            models.append(model)
+
+    errors = []
+
+    for model in models:
+
+        try:
+
+            print(
+                f"Trying Gemini model: {model}"
+            )
+
+            result = call_model(
+                model,
+                prompt
+            )
+
+            print(
+                f"Gemini succeeded with: {model}"
+            )
+
+            return result
+
+        except Exception as exc:
+
+            print(
+                f"Gemini failed with "
+                f"{model}: {exc}"
+            )
+
+            errors.append(
+                f"{model}: {exc}"
+            )
+
+    raise RuntimeError(
+        "All Gemini models failed.\n"
+        + "\n".join(errors)
     )
 
-    brief = job.get("brief", "").strip()
+
+# =========================
+# JOB PROCESSING
+# =========================
+
+def process(
+    job_file: Path
+) -> Path:
+
+    job = json.loads(
+        job_file.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    brief = job.get(
+        "brief",
+        ""
+    ).strip()
 
     if not brief:
+
         raise ValueError(
-            "Job must contain a non-empty brief."
+            "Job must contain "
+            "a non-empty brief."
         )
 
     deliverables = job.get(
@@ -129,90 +244,138 @@ CLIENT BRIEF:
 {brief}
 
 DELIVERABLES:
-{json.dumps(deliverables, ensure_ascii=False, indent=2)}
+{json.dumps(
+    deliverables,
+    ensure_ascii=False,
+    indent=2
+)}
 
 Create the complete client-ready package.
 
 Requirements:
+
 - Write naturally.
-- Match the requested audience and tone.
-- Make every requested deliverable complete.
+- Match the requested audience.
+- Match the requested tone.
+- Complete every requested deliverable.
 - Avoid repetition.
+- Make the content practical.
 - Do not invent factual claims.
-- For health-related content, avoid diagnosis,
-  treatment promises, or unsupported medical claims.
-- Structure the final answer clearly with headings.
+- Do not invent prices or promotions.
+- Do not invent credentials or testimonials.
+- For health-related businesses, avoid diagnosis,
+  treatment promises, and unsupported medical claims.
+- Clearly structure the final answer with headings.
+- Return ONLY the final deliverable.
 """
 
-    result = call_gemini(prompt)
+    result = call_gemini(
+        prompt
+    )
 
     safe_id = re.sub(
         r"[^a-zA-Z0-9_-]+",
         "_",
-        str(job.get("id", job_file.stem)),
+        str(
+            job.get(
+                "id",
+                job_file.stem
+            )
+        )
     )[:80]
 
-    output_file = OUT / f"{safe_id}.md"
+    output_file = (
+        OUT /
+        f"{safe_id}.md"
+    )
 
     output_file.write_text(
         result + "\n",
-        encoding="utf-8",
+        encoding="utf-8"
     )
 
     job["status"] = "completed"
+
     job["output"] = str(
-        output_file.relative_to(ROOT)
+        output_file.relative_to(
+            ROOT
+        )
     )
 
     job_file.write_text(
         json.dumps(
             job,
             ensure_ascii=False,
-            indent=2,
+            indent=2
         ),
-        encoding="utf-8",
+        encoding="utf-8"
     )
 
     return output_file
 
 
+# =========================
+# MAIN
+# =========================
+
 def main():
+
     job_files = sorted(
         JOBS.glob("*.json")
     )
 
     if not job_files:
-        print("No jobs found.")
+
+        print(
+            "No jobs found."
+        )
+
         return
 
     for job_file in job_files:
+
         try:
+
             job = json.loads(
                 job_file.read_text(
                     encoding="utf-8"
                 )
             )
 
-            if job.get("status") == "completed":
+            if (
+                job.get("status")
+                == "completed"
+            ):
+
                 print(
-                    f"Skipping completed job: {job_file.name}"
+                    f"Skipping completed job: "
+                    f"{job_file.name}"
                 )
+
                 continue
 
             print(
-                f"Processing {job_file.name}..."
+                f"Processing "
+                f"{job_file.name}..."
             )
 
-            output = process(job_file)
+            output = process(
+                job_file
+            )
 
             print(
-                f"SUCCESS {job_file.name} -> {output}"
+                f"SUCCESS "
+                f"{job_file.name} -> "
+                f"{output}"
             )
 
         except Exception as exc:
+
             print(
-                f"FAILED {job_file.name}: "
-                f"{type(exc).__name__}: {exc}"
+                f"FAILED "
+                f"{job_file.name}: "
+                f"{type(exc).__name__}: "
+                f"{exc}"
             )
 
 
