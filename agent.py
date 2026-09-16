@@ -6,12 +6,37 @@ from ai_router import generate
 from content_planner import build_plan
 from content_generator import generate_content
 from review_agent import review_content
+from media_router import MediaRouter
 
 ROOT = Path(__file__).parent
 JOBS = ROOT / "jobs"
 OUT = ROOT / "outputs"
 JOBS.mkdir(exist_ok=True)
 OUT.mkdir(exist_ok=True)
+
+MEDIA_ROUTER = MediaRouter()
+
+
+def generate_cover_image(job, safe_id):
+    """
+    Best-effort cover image for the job, generated from the brief.
+    Uses whatever free provider chain is configured (see media_router.py /
+    image_provider.py). If no provider is available (e.g. HF_TOKEN not
+    set) or generation fails, this is SKIPPED — it never fails the job.
+    Returns a path relative to ROOT, or None.
+    """
+    brief = job.get("brief", "").strip()
+    if not brief:
+        return None
+
+    prompt = (
+        f"A clean, professional Instagram cover image representing this "
+        f"business/brief: {brief}. Minimal, on-brand, no text overlay."
+    )
+    result = MEDIA_ROUTER.generate_image(prompt=prompt)
+    if result.ok and result.output_path:
+        return Path(result.output_path).relative_to(ROOT) if Path(result.output_path).is_absolute() else result.output_path
+    return None
 
 MAX_REVIEW_ROUNDS = 3
 
@@ -245,9 +270,16 @@ def process(job_file):
     output_file = OUT / f"{safe_id}.md"
 
     # ============================================================
+    # Optional cover image (best-effort, never blocks the job)
+    # ============================================================
+    cover_image_path = generate_cover_image(job, safe_id)
+
+    # ============================================================
     # Build output document
     # ============================================================
     output_parts = []
+    if cover_image_path:
+        output_parts.append(f"![cover]({cover_image_path})\n\n")
     output_parts.append("# Content Plan\n\n")
     output_parts.append(
         json.dumps(
@@ -318,6 +350,7 @@ def process(job_file):
     job["review_history"] = review_history
     job["review_rounds"] = len(review_history)
     job["revision_count"] = revision_count
+    job["cover_image"] = str(cover_image_path) if cover_image_path else None
     job["final_review_status"] = (
         final_review.get("status")
         if final_review
