@@ -133,8 +133,7 @@ def process(job_file):
     review_history = []
     revision_count = 0
     final_review = None
-
-        manual_review_required = False
+    manual_review_required = False
     review_error = None
 
     for round_number in range(1, MAX_REVIEW_ROUNDS + 1):
