@@ -1,0 +1,18 @@
+{
+  "id": "example-job-001",
+  "brief": "یک کلینیک زیبایی در تهران هستیم و می‌خوایم یک هفته محتوای اینستاگرام برامون آماده کنی تا مشتری‌های جدید جذب کنیم.",
+  "platform": "instagram",
+  "language": "fa",
+  "audience": "زنان ۲۵ تا ۴۵ ساله ساکن تهران",
+  "tone": "دوستانه و حرفه‌ای",
+  "goal": "افزایش فالوور و جذب مشتری جدید",
+  "content_type": "post",
+  "brand_voice": "",
+  "constraints": [],
+  "deliverables": [
+    "10 social-media post ideas with hooks",
+    "10 ready-to-publish captions",
+    "7-day content calendar"
+  ],
+  "review_required": true
+}
