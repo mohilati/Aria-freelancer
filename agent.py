@@ -134,7 +134,140 @@ def process(job_file):
     revision_count = 0
     final_review = None
 
+        manual_review_required = False
+    review_error = None
+
     for round_number in range(1, MAX_REVIEW_ROUNDS + 1):
+
+        print(
+            f"[Review] Starting review round "
+            f"{round_number}/{MAX_REVIEW_ROUNDS}"
+        )
+
+        try:
+            review = review_content(
+                job=job,
+                plan=plan,
+                content=result,
+            )
+
+        except Exception as exc:
+            review_error = str(exc)
+
+            print(
+                f"[Review] Review Agent failed on round "
+                f"{round_number}: {review_error}"
+            )
+
+            manual_review_required = True
+
+            review = {
+                "round": round_number,
+                "status": "manual_review",
+                "score": None,
+                "issues": [
+                    {
+                        "severity": "critical",
+                        "category": "review_agent_failure",
+                        "description": review_error,
+                    }
+                ],
+                "missing_deliverables": [],
+                "revision_instructions": [],
+                "reviewer": "aria-review-agent-v1",
+            }
+
+            review_history.append(review)
+            final_review = review
+
+            break
+
+        review["round"] = round_number
+        review_history.append(review)
+
+        final_review = review
+
+        print(
+            f"[Review] Round {round_number}: "
+            f"status={review.get('status')} "
+            f"score={review.get('score')}"
+        )
+
+        # --------------------------------------------------------
+        # Approved
+        # --------------------------------------------------------
+
+        if review.get("status") == "approved":
+
+            print(
+                f"[Review] Content approved on round "
+                f"{round_number}"
+            )
+
+            break
+
+        # --------------------------------------------------------
+        # Needs revision
+        # --------------------------------------------------------
+
+        if review.get("status") == "needs_revision":
+
+            if round_number < MAX_REVIEW_ROUNDS:
+
+                revision_count += 1
+
+                print(
+                    f"[Revision] Revising content "
+                    f"(revision {revision_count})"
+                )
+
+                try:
+                    result = revise_content(
+                        job=job,
+                        plan=plan,
+                        current_content=result,
+                        review=review,
+                    )
+
+                except Exception as exc:
+
+                    review_error = str(exc)
+
+                    print(
+                        f"[Revision] Revision Agent failed: "
+                        f"{review_error}"
+                    )
+
+                    manual_review_required = True
+
+                    review_history.append({
+                        "round": round_number,
+                        "status": "manual_review",
+                        "score": None,
+                        "issues": [
+                            {
+                                "severity": "critical",
+                                "category": "revision_agent_failure",
+                                "description": review_error,
+                            }
+                        ],
+                        "missing_deliverables": [],
+                        "revision_instructions": [],
+                        "reviewer": "aria-revision-agent-v1",
+                    })
+
+                    break
+
+            else:
+
+                print(
+                    "[Review] Maximum review rounds reached. "
+                    "Manual review required."
+                )
+
+                manual_review_required = True
+
+                break
 
         print(
             f"[Review] Starting review round "
