@@ -14,5 +14,183 @@
     "10 ready-to-publish captions",
     "7-day content calendar"
   ],
-  "review_required": true
+  "review_required": true,
+  "status": "needs_manual_review",
+  "output": "outputs/image-test-001.md",
+  "content_plan": {
+    "content_goal": "جذب مشتریان جدید، معرفی کیفیت قهوه تخصصی و فضای کافه، و افزایش تعامل و تعقیب‌کنندگان صفحه اینستاگرام",
+    "audience_angle": "ایجاد حسی مدرن، صمیمی و جذاب برای جوانان و فریلنسرهای تهرانی که به دنبال قهوه باکیفیت و فضایی دلنشین برای قرارها یا کار هستند.",
+    "core_message": "قهوه تخصصی یعنی دقت در طعم و کیفیت؛ پاتوق جدید شما برای نوشیدن یک قهوه واقعی و داشتن حال خوب.",
+    "content_pillars": [
+      "آموزش و فرهنگ قهوه تخصصی (Specialty Coffee)",
+      "معرفی فضای کافه و اتمسفر پاتوق",
+      "نمایش پشت صحنه و هنر باریستا",
+      "معرفی منو، نوشیدنی‌ها و دسرهای مکمل"
+    ],
+    "formats": [
+      "ریلز ویدئویی کوتاه (Reels)",
+      "پست اسلایدی (Carousel)",
+      "استوری‌های تعاملی"
+    ],
+    "hooks": [
+      "تفاوت قهوه تخصصی با قهوه‌ای که هر روز می‌نوشی چیه؟",
+      "دنبال یک کافه دنچ تو تهران برای کار با لپ‌تاپ یا دیدن دوستات می‌گردی؟",
+      "راز یک عصاره‌گیری عالی و عطر واقعی قهوه چیه؟",
+      "طعمی از قهوه که احتمالاً تا حالا امتحانش نکردی!"
+    ],
+    "call_to_action": "این پست رو برای دوست قهوه‌بازتون بفرستید و تو کامنت‌ها بگید قهوه مورد علاقه‌تون چیه تا تو اولین حضورتون از ما تخفیف بگیرید!",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "معرفی مفهوم قهوه تخصصی و تفاوت آن با قهوه تجاری",
+        "format": "ویدیو کوتاه (Reels)",
+        "hook": "تفاوت قهوه تخصصی با قهوه‌ای که هر روز می‌نوشی چیه؟"
+      },
+      {
+        "day": 2,
+        "topic": "تور تصویری از فضای کافه، زاویه‌های مناسب عکاسی و میزهای کاری",
+        "format": "پست اسلایدی (Carousel)",
+        "hook": "دنبال یک کافه دنچ تو تهران برای کار با لپ‌تاپ یا دیدن دوستات می‌گردی؟"
+      },
+      {
+        "day": 3,
+        "topic": "نمایش هنر باریستا در عصاره‌گیری اسپرسو و لاته آرت",
+        "format": "ویدیو کوتاه (Reels)",
+        "hook": "راز یک عصاره‌گیری عالی و عطر واقعی قهوه چیه؟"
+      },
+      {
+        "day": 4,
+        "topic": "معرفی نوشیدنی امضای کافه (Signature Drink) و طعم‌دهنده‌های طبیعی",
+        "format": "پست اسلایدی (Carousel)",
+        "hook": "طعمی از قهوه که احتمالاً تا حالا امتحانش نکردی!"
+      },
+      {
+        "day": 5,
+        "topic": "پیشنهاد ترکیب (Pairing) قهوه و دسر تازه روز",
+        "format": "پست اسلایدی (Carousel)",
+        "hook": "کدوم دسر کنار یک وی۶۰ (V60) دم‌آوری‌شده بهترین طعم رو میده؟"
+      },
+      {
+        "day": 6,
+        "topic": "مسابقه ساده برای جذب مشتری حضوری (دعوت به کافه با یک همراه)",
+        "format": "ویدیو کوتاه (Reels)",
+        "hook": "دوست داری این آخر هفته مهمون کافه ما باشی؟"
+      },
+      {
+        "day": 7,
+        "topic": "جمع‌بندی هفته و به اشتراک‌گذاری نظرات و عکس‌های مشتریان",
+        "format": "پست اسلایدی (Carousel)",
+        "hook": "این هفته کیا پیش ما بودن؟ مرسی که انرژی مثبت کافه هستید!"
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review": {
+    "status": "needs_revision",
+    "score": 80,
+    "issues": [
+      {
+        "severity": "major",
+        "category": "completeness",
+        "description": "The requested 7-day content calendar deliverable is missing from the generated response."
+      },
+      {
+        "severity": "minor",
+        "category": "formatting",
+        "description": "Caption 10 ends with an incomplete/truncated hashtag (#حال_)."
+      }
+    ],
+    "missing_deliverables": [
+      "7-day content calendar"
+    ],
+    "revision_instructions": [
+      "Include a dedicated section for the 7-day content calendar mapping the planned content to specific days.",
+      "Complete the truncated hashtag at the end of Caption 10."
+    ],
+    "reviewer": "aria-review-agent-v1",
+    "attempt": 2,
+    "round": 3
+  },
+  "review_history": [
+    {
+      "status": "needs_revision",
+      "score": 65,
+      "issues": [
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The 7-day content calendar section ('بخش سوم: تقویم محتوایی ۷ روزه') was entirely omitted from the generated content."
+        },
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "Caption 10 is completely missing, and Caption 9 cuts off prematurely in the hashtag line (`#روست_قهوه #`)."
+        }
+      ],
+      "missing_deliverables": [
+        "7-day content calendar (تقویم محتوایی ۷ روزه)",
+        "Caption 10 (کاپشن شماره ۱۰)"
+      ],
+      "revision_instructions": [
+        "Add Section 3 containing the complete 7-day content calendar structured according to the approved plan.",
+        "Complete Caption 9 by providing its full hashtag set.",
+        "Write and include Caption 10 corresponding to post idea 10 (انرژی عصرگاهی و خستگی‌درکردن)."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    },
+    {
+      "status": "needs_revision",
+      "score": 60,
+      "issues": [
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The output is severely truncated. Caption 9 stops abruptly mid-sentence, Caption 10 is completely missing, and Section 3 (7-day Content Calendar) was omitted entirely."
+        }
+      ],
+      "missing_deliverables": [
+        "Complete Caption 9 and Caption 10",
+        "7-Day Content Calendar"
+      ],
+      "revision_instructions": [
+        "Complete Caption 9 fully without truncation and add Caption 10 corresponding to Post Idea 10.",
+        "Include the missing Section 3 containing the full 7-day content calendar as specified in the brief and plan."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 2
+    },
+    {
+      "status": "needs_revision",
+      "score": 80,
+      "issues": [
+        {
+          "severity": "major",
+          "category": "completeness",
+          "description": "The requested 7-day content calendar deliverable is missing from the generated response."
+        },
+        {
+          "severity": "minor",
+          "category": "formatting",
+          "description": "Caption 10 ends with an incomplete/truncated hashtag (#حال_)."
+        }
+      ],
+      "missing_deliverables": [
+        "7-day content calendar"
+      ],
+      "revision_instructions": [
+        "Include a dedicated section for the 7-day content calendar mapping the planned content to specific days.",
+        "Complete the truncated hashtag at the end of Caption 10."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 2,
+      "round": 3
+    }
+  ],
+  "review_rounds": 3,
+  "revision_count": 2,
+  "cover_image": null,
+  "final_review_status": "needs_revision"
 }
