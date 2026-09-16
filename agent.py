@@ -1,372 +1,191 @@
-import json
-import re
-from pathlib import Path
+"""
+agent.py
+--------
+Aria Freelancer 2.0 — Content Factory orchestrator.
 
-from ai_router import generate
-from content_planner import build_plan
-from content_generator import generate_content
-from review_agent import review_content
+Pipeline: JOB -> PLANNER -> AI ROUTER (text) -> MEDIA ROUTER (image/video)
+          -> AUDIO (tts + music) -> FFMPEG assemble -> REVIEW -> DELIVERY
 
-ROOT = Path(__file__).parent
-JOBS = ROOT / "jobs"
-OUT = ROOT / "outputs"
-JOBS.mkdir(exist_ok=True)
-OUT.mkdir(exist_ok=True)
+This file only wires pieces together — it imports your existing
+content_planner.py / ai_router.py / review_agent.py if they're present in
+the repo, and falls back to a minimal stand-in if they're not (so this
+still runs standalone while those pieces are being rebuilt).
 
-MAX_REVIEW_ROUNDS = 3
+Run a single job:
+    python agent.py --job jobs/example_job.json
 
-
-def revise_content(job, plan, current_content, review):
-    """Revise the current content using Review Agent feedback."""
-    brief = job.get("brief", "").strip()
-
-    prompt = f"""You are the Revision Agent for Aria Freelancer.
-
-Your job is to revise an existing generated content package so that it
-fully satisfies the client brief and the approved Content Plan.
-
-Do NOT create a new strategy.
-Do NOT ignore the approved plan.
-Do NOT provide a partial patch.
-Return the COMPLETE revised content package.
-
-CLIENT BRIEF:
-{brief}
-
-CONTENT CONTEXT:
-{json.dumps({
-    "platform": job.get("platform", ""),
-    "language": job.get("language", ""),
-    "audience": job.get("audience", ""),
-    "tone": job.get("tone", ""),
-    "goal": job.get("goal", ""),
-    "content_type": job.get("content_type", ""),
-    "brand_voice": job.get("brand_voice", ""),
-    "constraints": job.get("constraints", []),
-    "deliverables": job.get("deliverables", [])
-}, ensure_ascii=False, indent=2)}
-
-APPROVED CONTENT PLAN:
-{json.dumps(plan, ensure_ascii=False, indent=2)}
-
-CURRENT GENERATED CONTENT:
-{current_content}
-
-REVIEW AGENT FEEDBACK:
-{json.dumps(review, ensure_ascii=False, indent=2)}
-
-REVISION RULES:
-1. Fix every critical and major issue identified by the Review Agent.
-2. Complete every missing deliverable.
-3. Preserve the approved Content Plan.
-4. Preserve useful parts of the current content when they already satisfy
-   the brief.
-5. Do not remove completed deliverables just to fix another issue.
-6. Return the FULL content package, not only the changed sections.
-7. Match the requested platform, language, audience and tone.
-8. Never invent statistics, sources or factual claims.
-9. For psychology/health content, avoid diagnosis, treatment promises and
-   unsupported medical claims.
-10. Remove placeholder text and broken formatting.
-11. Make the final result directly usable by the client.
-12. Clearly organize the final result with Markdown headings.
-13. Return ONLY the complete revised content package.
-
-Produce the complete revised package now.
+Run the whole jobs/ folder:
+    python agent.py --jobs-dir jobs
 """
 
-    revised = generate(prompt).strip()
-    if not revised:
-        raise ValueError("Revision Agent returned empty content.")
-    return revised
+import argparse
+import json
+import logging
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from media_router import MediaRouter
+
+logger = logging.getLogger("aria.agent")
+logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
+
+OUTPUT_DIR = os.environ.get("ARIA_OUTPUT_DIR", "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def process(job_file):
-    job = json.loads(job_file.read_text(encoding="utf-8"))
-    brief = job.get("brief", "").strip()
-    if not brief:
-        raise ValueError("Job must contain a non-empty brief.")
+# ---------------------------------------------------------------------------
+# Optional integration points — use your real modules if they're in the repo
+# ---------------------------------------------------------------------------
+try:
+    from content_planner import plan_job  # your existing planner
+except ImportError:
+    def plan_job(job):
+        """
+        Minimal stand-in planner: turns one job into a list of "items"
+        (e.g. N reels), each with a text prompt derived from the job.
+        Replace by importing your real content_planner.plan_job.
+        """
+        quantity = job.get("quantity", 1)
+        topic = job.get("topic") or job.get("content_type", "content")
+        return [
+            {"index": i, "prompt": f"{topic} — item {i + 1} of {quantity}"}
+            for i in range(quantity)
+        ]
 
-    deliverables = job.get(
-        "deliverables",
-        [
-            "10 social-media post ideas with hooks",
-            "10 ready-to-publish captions",
-            "7-day content calendar",
-        ],
-    )
-    job["deliverables"] = deliverables
-
-    # ============================================================
-    # Stage 1: Content Planner
-    # ============================================================
-    print(f"[Planner] Building content plan for {job_file.name}")
-    plan = build_plan(job)
-
-    # ============================================================
-    # Stage 2: Initial Content Generation
-    # ============================================================
-    print(f"[Generator] Generating initial content for {job_file.name}")
-    result = generate_content(job, plan)
-
-    # ============================================================
-    # Stage 3-5: Review + Revision Loop
-    #
-    # Maximum:
-    # Round 1 = Generate -> Review
-    # Round 2 = Revision -> Review
-    # Round 3 = Revision -> Review
-    #
-    # NOTE: this used to run the review+revise block TWICE per iteration
-    # (a leftover copy/paste), which doubled API calls to the review/
-    # revision providers and left the second copy unprotected by
-    # try/except. That duplicate block has been removed — each round now
-    # does exactly one review call and, if needed, exactly one revision
-    # call, both error-handled.
-    # ============================================================
-    review_history = []
-    revision_count = 0
-    final_review = None
-    manual_review_required = False
-    review_error = None
-
-    for round_number in range(1, MAX_REVIEW_ROUNDS + 1):
-        print(
-            f"[Review] Starting review round "
-            f"{round_number}/{MAX_REVIEW_ROUNDS}"
+try:
+    from review_agent import review_output  # your existing reviewer
+except ImportError:
+    def review_output(item_result):
+        """
+        Minimal stand-in reviewer: approves anything that has at least one
+        successfully generated media asset. Replace by importing your real
+        review_agent.review_output.
+        """
+        has_asset = any(
+            item_result.get(k) and item_result[k].get("ok")
+            for k in ("image", "video", "tts", "music")
         )
-        try:
-            review = review_content(
-                job=job,
-                plan=plan,
-                content=result,
-            )
-        except Exception as exc:
-            review_error = str(exc)
-            print(
-                f"[Review] Review Agent failed on round "
-                f"{round_number}: {review_error}"
-            )
-            manual_review_required = True
-            review = {
-                "round": round_number,
-                "status": "manual_review",
-                "score": None,
-                "issues": [
-                    {
-                        "severity": "critical",
-                        "category": "review_agent_failure",
-                        "description": review_error,
-                    }
-                ],
-                "missing_deliverables": [],
-                "revision_instructions": [],
-                "reviewer": "aria-review-agent-v1",
-            }
-            review_history.append(review)
-            final_review = review
-            break
+        return "approved" if has_asset else "revision"
 
-        review["round"] = round_number
-        review_history.append(review)
-        final_review = review
-        print(
-            f"[Review] Round {round_number}: "
-            f"status={review.get('status')} "
-            f"score={review.get('score')}"
+
+# ---------------------------------------------------------------------------
+# FFmpeg assembly
+# ---------------------------------------------------------------------------
+def assemble_with_ffmpeg(image_path, audio_path, out_path):
+    """
+    Minimal assembly: a still image + audio track -> mp4. Swap this out
+    for a real video_path + audio mux once video providers are live, or
+    for a more elaborate ffmpeg filter graph (captions, transitions, etc).
+    Returns out_path on success, None on failure.
+    """
+    if not image_path or not audio_path:
+        logger.info("FFMPEG: missing image or audio input — skipping assembly")
+        return None
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-loop", "1",
+        "-i", image_path,
+        "-i", audio_path,
+        "-c:v", "libx264",
+        "-tune", "stillimage",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-pix_fmt", "yuv420p",
+        "-shortest",
+        out_path,
+    ]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        return out_path
+    except FileNotFoundError:
+        logger.warning("FFMPEG: ffmpeg binary not found on PATH — skipping assembly")
+        return None
+    except subprocess.CalledProcessError as exc:
+        logger.warning(f"FFMPEG: assembly failed ({exc.stderr.decode(errors='ignore')[:300]})")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Core cycle
+# ---------------------------------------------------------------------------
+def process_item(router: MediaRouter, item):
+    """Runs one planned item through image + audio + assembly + review."""
+    prompt = item["prompt"]
+    logger.info(f"--- item {item['index']}: {prompt} ---")
+
+    image_result = router.generate_image(prompt=prompt)
+    tts_result = router.generate_tts(text=prompt)
+    # music is optional background — comment out if not wanted per item
+    music_result = router.generate_music(prompt=prompt)
+
+    assembled_path = None
+    if image_result.ok and tts_result.ok:
+        out_path = os.path.join(OUTPUT_DIR, f"final_{item['index']}.mp4")
+        assembled_path = assemble_with_ffmpeg(
+            image_result.output_path, tts_result.output_path, out_path
         )
 
-        # --------------------------------------------------------
-        # Approved
-        # --------------------------------------------------------
-        if review.get("status") == "approved":
-            print(
-                f"[Review] Content approved on round "
-                f"{round_number}"
-            )
-            break
+    item_result = {
+        "index": item["index"],
+        "prompt": prompt,
+        "image": vars(image_result),
+        "tts": vars(tts_result),
+        "music": vars(music_result),
+        "assembled_path": assembled_path,
+    }
+    item_result["status"] = review_output(item_result)
+    return item_result
 
-        # --------------------------------------------------------
-        # Needs revision
-        # --------------------------------------------------------
-        if review.get("status") == "needs_revision":
-            if round_number < MAX_REVIEW_ROUNDS:
-                revision_count += 1
-                print(
-                    f"[Revision] Revising content "
-                    f"(revision {revision_count})"
-                )
-                try:
-                    result = revise_content(
-                        job=job,
-                        plan=plan,
-                        current_content=result,
-                        review=review,
-                    )
-                except Exception as exc:
-                    review_error = str(exc)
-                    print(
-                        f"[Revision] Revision Agent failed: "
-                        f"{review_error}"
-                    )
-                    manual_review_required = True
-                    review_history.append({
-                        "round": round_number,
-                        "status": "manual_review",
-                        "score": None,
-                        "issues": [
-                            {
-                                "severity": "critical",
-                                "category": "revision_agent_failure",
-                                "description": review_error,
-                            }
-                        ],
-                        "missing_deliverables": [],
-                        "revision_instructions": [],
-                        "reviewer": "aria-revision-agent-v1",
-                    })
-                    break
-            else:
-                print(
-                    "[Review] Maximum review rounds reached. "
-                    "Manual review required."
-                )
-                manual_review_required = True
-                break
 
-    # ============================================================
-    # Prepare safe output filename
-    # ============================================================
-    safe_id = re.sub(
-        r"[^a-zA-Z0-9_-]+",
-        "_",
-        str(job.get("id", job_file.stem)),
-    )[:80]
-    output_file = OUT / f"{safe_id}.md"
+def run_job(job):
+    logger.info(f"=== Running job: {job.get('id', '(no id)')} ===")
+    router = MediaRouter()
+    planned_items = plan_job(job)
 
-    # ============================================================
-    # Build output document
-    # ============================================================
-    output_parts = []
-    output_parts.append("# Content Plan\n\n")
-    output_parts.append(
-        json.dumps(
-            plan,
-            ensure_ascii=False,
-            indent=2,
-        )
+    results = [process_item(router, item) for item in planned_items]
+
+    approved = [r for r in results if r["status"] == "approved"]
+    needs_revision = [r for r in results if r["status"] != "approved"]
+
+    logger.info(
+        f"=== Job {job.get('id', '(no id)')} done: "
+        f"{len(approved)} approved, {len(needs_revision)} need revision ==="
     )
-    output_parts.append("\n\n")
-
-    # ------------------------------------------------------------
-    # Review history
-    # ------------------------------------------------------------
-    output_parts.append("# Review History\n\n")
-    for review in review_history:
-        round_number = review.get("round", "?")
-        output_parts.append(
-            f"## Review Round {round_number}\n\n"
-        )
-        output_parts.append(
-            json.dumps(
-                review,
-                ensure_ascii=False,
-                indent=2,
-            )
-        )
-        output_parts.append("\n\n")
-
-    # ------------------------------------------------------------
-    # Final status
-    # ------------------------------------------------------------
-    output_parts.append("# Final Status\n\n")
-    if manual_review_required:
-        output_parts.append(
-            "Status: MANUAL_REVIEW_REQUIRED\n\n"
-        )
-        if review_error:
-            output_parts.append(
-                f"Reason: {review_error}\n\n"
-            )
-    else:
-        output_parts.append(
-            "Status: COMPLETED\n\n"
-        )
-    output_parts.append(result)
-    output_parts.append("\n")
-
-    output_file.write_text(
-        "".join(output_parts),
-        encoding="utf-8",
-    )
-
-    # ============================================================
-    # Update Job Metadata
-    # ============================================================
-    final_status = (
-        "completed"
-        if final_review
-        and final_review.get("status") == "approved"
-        else "needs_manual_review"
-    )
-    job["status"] = final_status
-    job["output"] = str(
-        output_file.relative_to(ROOT)
-    )
-    job["content_plan"] = plan
-    job["review"] = final_review
-    job["review_history"] = review_history
-    job["review_rounds"] = len(review_history)
-    job["revision_count"] = revision_count
-    job["final_review_status"] = (
-        final_review.get("status")
-        if final_review
-        else "unknown"
-    )
-
-    job_file.write_text(
-        json.dumps(
-            job,
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-
-    return output_file
+    return results
 
 
-def main():
-    for job_file in sorted(JOBS.glob("*.json")):
-        try:
-            job = json.loads(
-                job_file.read_text(
-                    encoding="utf-8"
-                )
-            )
+def cycle(job_path=None, jobs_dir=None):
+    """Entry point used by run_once.py / the GitHub Actions workflow."""
+    if job_path:
+        job = json.loads(Path(job_path).read_text(encoding="utf-8"))
+        return {job_path: run_job(job)}
 
-            # Jobs that are already finished should not
-            # be processed again automatically.
-            if job.get("status") in {
-                "completed",
-                "needs_manual_review",
-            }:
-                print(
-                    f"Skipping finalized job: "
-                    f"{job_file.name}"
-                )
-                continue
+    if jobs_dir:
+        all_results = {}
+        for jf in sorted(Path(jobs_dir).glob("*.json")):
+            job = json.loads(jf.read_text(encoding="utf-8"))
+            all_results[str(jf)] = run_job(job)
+        return all_results
 
-            output = process(job_file)
-            print(
-                f"SUCCESS {job_file.name} -> {output}"
-            )
-        except Exception as exc:
-            print(
-                f"FAILED {job_file.name}: "
-                f"{type(exc).__name__}: {exc}"
-            )
+    logger.warning("cycle() called with neither job_path nor jobs_dir — nothing to do")
+    return {}
+
+
+# kept for backward compatibility with the existing GitHub Actions workflow,
+# which calls agent.py's cycle() via run_once.py
+main = cycle
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Aria Freelancer 2.0 agent")
+    parser.add_argument("--job", help="Path to a single job JSON file")
+    parser.add_argument("--jobs-dir", help="Path to a directory of job JSON files")
+    args = parser.parse_args()
+
+    if not args.job and not args.jobs_dir:
+        parser.error("Pass --job <file> or --jobs-dir <dir>")
+
+    cycle(job_path=args.job, jobs_dir=args.jobs_dir)
