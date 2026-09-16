@@ -385,7 +385,26 @@ def process(job_file):
     # Final content
     # ------------------------------------------------------------
 
-    output_parts.append("# Final Deliverable\n\n")
+        # ------------------------------------------------------------
+    # Final status
+    # ------------------------------------------------------------
+
+    output_parts.append("# Final Status\n\n")
+
+    if manual_review_required:
+        output_parts.append(
+            "Status: MANUAL_REVIEW_REQUIRED\n\n"
+        )
+
+        if review_error:
+            output_parts.append(
+                f"Reason: {review_error}\n\n"
+            )
+
+    else:
+        output_parts.append(
+            "Status: COMPLETED\n\n"
+        )
     output_parts.append(result)
     output_parts.append("\n")
 
