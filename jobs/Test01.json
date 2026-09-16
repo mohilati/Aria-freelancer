@@ -18,5 +18,63 @@
     "عنوان",
     "متن اصلی",
     "CTA کوتاه"
-  ]
+  ],
+  "status": "completed",
+  "output": "outputs/review-test-003.md",
+  "content_plan": {
+    "content_goal": "افزایش آگاهی جوانان درباره تاثیر مقایسه اجتماعی بر سلامت روان و ارائه راهکارهای عملی برای مدیریت آن",
+    "audience_angle": "نگاهی صمیمی و علمی به تجربه روزمره مقایسه خود با دیگران در شبکه‌های اجتماعی",
+    "core_message": "مقایسه مداوم با دیگران می‌تواند اعتماد به نفس را تضعیف کند؛ درک این پدیده و تمرکز بر رشد شخصی کلید حفظ تعادل است",
+    "content_pillars": [
+      "علم اجتماعی مقایسه",
+      "تاثیر بر سلامت روان",
+      "نکات عملی برای توقف مقایسه",
+      "تغییر تمرکز به رشد شخصی"
+    ],
+    "formats": [
+      "carousel",
+      "reel",
+      "story"
+    ],
+    "hooks": [
+      "وقتی به «لایک‌های» دوستام نگاه می‌کنم، به خودم آسیب می‌زنم...",
+      "آیا تا به حال متوجه شدید که مقایسه مثل چرخی می‌چرخد که شما را خسته می‌کند؟",
+      "یک مثال از مقایسه در مورد یک تصمیم روزمره: انتخاب لباس برای مدرسه"
+    ],
+    "call_to_action": "نظر بدهید: آیا راهی پیدا کرده‌اید که مقایسه را به چالشی برای رشد تبدیل کنید؟ #مقایسه_و_رشد",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "تاثیر مقایسه اجتماعی بر اعتماد به نفس",
+        "format": "carousel",
+        "hook": "وقتی به «لایک‌های» دوستام نگاه می‌کنم، به خودم آسیب می‌زنم..."
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review": {
+    "status": "approved",
+    "score": 95,
+    "issues": [],
+    "missing_deliverables": [],
+    "revision_instructions": [],
+    "reviewer": "aria-review-agent-v1",
+    "attempt": 1,
+    "round": 1
+  },
+  "review_history": [
+    {
+      "status": "approved",
+      "score": 95,
+      "issues": [],
+      "missing_deliverables": [],
+      "revision_instructions": [],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    }
+  ],
+  "review_rounds": 1,
+  "revision_count": 0,
+  "final_review_status": "approved"
 }
