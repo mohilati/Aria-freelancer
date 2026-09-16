@@ -14,5 +14,188 @@
     "10 ready-to-publish captions",
     "7-day content calendar"
   ],
-  "review_required": true
+  "review_required": true,
+  "status": "needs_manual_review",
+  "output": "outputs/example-job-001.md",
+  "content_plan": {
+    "content_goal": "افزایش آگاهی از کلینیک، جلب اعتماد و ترغیب زنان ساکن تهران به دنبال‌کردن صفحه و رزرو مشاوره",
+    "audience_angle": "زنان ۲۵ تا ۴۵ ساله تهران که به مراقبت از پوست و خدمات زیبایی اهمیت می‌دهند و پیش از انتخاب کلینیک، به مشاوره شفاف و حرفه‌ای نیاز دارند",
+    "core_message": "زیبایی و مراقبت از پوست باید متناسب با نیازهای هر فرد، با توضیح شفاف مراحل و بدون وعده نتیجه قطعی انجام شود",
+    "content_pillars": [
+      "آموزش مراقبت از پوست",
+      "انتخاب خدمت مناسب",
+      "اعتمادسازی و شفاف‌سازی فرایند کار",
+      "رفع باورهای رایج",
+      "معرفی تجربه مشاوره در کلینیک"
+    ],
+    "formats": [
+      "پست کاروسلی",
+      "پست تک‌تصویر",
+      "ریلز آموزشی کوتاه"
+    ],
+    "hooks": [
+      "پوست شما به یک روتین برای همه نیاز ندارد",
+      "قبل از رزرو هر خدمت زیبایی، این ۵ سؤال را بپرسید",
+      "سه اشتباه رایج در مراقبت روزانه از پوست",
+      "در جلسه مشاوره دقیقاً چه چیزهایی بررسی می‌شود؟",
+      "همه خدمات زیبایی برای همه مناسب نیستند",
+      "ضدآفتاب کجای روتین روزانه قرار می‌گیرد؟",
+      "از کجا بفهمیم انتخابم برای پوستم درست است؟"
+    ],
+    "call_to_action": "برای دریافت مشاوره و آشنایی با خدمات مناسب خود، همین امروز به ما دایرکت دهید و صفحه را برای مطالب آموزشی بیشتر دنبال کنید",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "شناخت انواع پوست و اهمیت انتخاب روتین متناسب با نیاز فردی",
+        "format": "پست کاروسلی",
+        "hook": "پوست شما به یک روتین برای همه نیاز ندارد"
+      },
+      {
+        "day": 2,
+        "topic": "پنج سؤال مهم قبل از رزرو خدمات زیبایی",
+        "format": "پست کاروسلی",
+        "hook": "قبل از رزرو هر خدمت زیبایی، این ۵ سؤال را بپرسید"
+      },
+      {
+        "day": 3,
+        "topic": "اشتباهات رایج در مراقبت روزانه از پوست",
+        "format": "ریلز آموزشی کوتاه",
+        "hook": "سه اشتباه رایج در مراقبت روزانه از پوست"
+      },
+      {
+        "day": 4,
+        "topic": "مراحل جلسه مشاوره و بررسی نیازهای مراجعه‌کننده",
+        "format": "پست تک‌تصویر",
+        "hook": "در جلسه مشاوره دقیقاً چه چیزهایی بررسی می‌شود؟"
+      },
+      {
+        "day": 5,
+        "topic": "چرا یک خدمت زیبایی ممکن است برای همه مناسب نباشد؟",
+        "format": "ریلز آموزشی کوتاه",
+        "hook": "همه خدمات زیبایی برای همه مناسب نیستند"
+      },
+      {
+        "day": 6,
+        "topic": "جایگاه ضدآفتاب در مراقبت روزانه و نکات استفاده از آن",
+        "format": "پست کاروسلی",
+        "hook": "ضدآفتاب کجای روتین روزانه قرار می‌گیرد؟"
+      },
+      {
+        "day": 7,
+        "topic": "راهنمای تصمیم‌گیری آگاهانه برای انتخاب خدمت مناسب",
+        "format": "پست تک‌تصویر",
+        "hook": "از کجا بفهمیم انتخابم برای پوستم درست است؟"
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review": {
+    "status": "needs_revision",
+    "score": 60,
+    "issues": [
+      {
+        "severity": "critical",
+        "category": "completeness",
+        "description": "The generated package is truncated at Caption 8. Captions 8, 9, and 10 are missing from the deliverables."
+      },
+      {
+        "severity": "critical",
+        "category": "completeness",
+        "description": "The 7-day content calendar deliverable requested in the client brief and content plan is missing from the output."
+      }
+    ],
+    "missing_deliverables": [
+      "Ready-to-publish captions 8, 9, and 10",
+      "7-day content calendar section"
+    ],
+    "revision_instructions": [
+      "Complete the remaining ready-to-publish captions (Captions 8, 9, and 10) matching the provided post ideas and approved plan.",
+      "Include the final 7-day content calendar section clearly formatted in the deliverable package."
+    ],
+    "reviewer": "aria-review-agent-v1",
+    "attempt": 1,
+    "round": 3
+  },
+  "review_history": [
+    {
+      "status": "needs_revision",
+      "score": 60,
+      "issues": [
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The generated content was truncated at Caption 8. Captions 8, 9, and 10 are missing or incomplete, and the explicit 7-day content calendar section is omitted from the deliverable."
+        }
+      ],
+      "missing_deliverables": [
+        "Captions 8, 9, and 10",
+        "7-day content calendar section"
+      ],
+      "revision_instructions": [
+        "Complete Caption 8 and provide full ready-to-publish text for Captions 9 and 10.",
+        "Add a dedicated section for the 7-day content calendar mapping out the daily posts according to the approved plan."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    },
+    {
+      "status": "needs_revision",
+      "score": 68,
+      "issues": [
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The generated content is truncated mid-sentence at the end of Caption 9 ('...مطالب آموزشی بیشتر دنبال') and Caption 10 is completely missing."
+        },
+        {
+          "severity": "major",
+          "category": "completeness",
+          "description": "The 7-day content calendar section is absent from the rendered final text package, despite being a required deliverable."
+        }
+      ],
+      "missing_deliverables": [
+        "Ready-to-publish Caption 10",
+        "Section 3: 7-day Content Calendar in the final text document"
+      ],
+      "revision_instructions": [
+        "Fix the truncation at the end of Caption 9, completing the call-to-action sentence and adding the relevant hashtags.",
+        "Generate the missing Caption 10 corresponding to Idea 10 ('تغذیه، سبک زندگی و شادابی پوست') complete with hook, body, CTA, and hashtags.",
+        "Add 'بخش سوم: جدول زمان‌بندی محتوای ۷ روزه' (7-day content calendar) into the final text package."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 2
+    },
+    {
+      "status": "needs_revision",
+      "score": 60,
+      "issues": [
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The generated package is truncated at Caption 8. Captions 8, 9, and 10 are missing from the deliverables."
+        },
+        {
+          "severity": "critical",
+          "category": "completeness",
+          "description": "The 7-day content calendar deliverable requested in the client brief and content plan is missing from the output."
+        }
+      ],
+      "missing_deliverables": [
+        "Ready-to-publish captions 8, 9, and 10",
+        "7-day content calendar section"
+      ],
+      "revision_instructions": [
+        "Complete the remaining ready-to-publish captions (Captions 8, 9, and 10) matching the provided post ideas and approved plan.",
+        "Include the final 7-day content calendar section clearly formatted in the deliverable package."
+      ],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 3
+    }
+  ],
+  "review_rounds": 3,
+  "revision_count": 2,
+  "final_review_status": "needs_revision"
 }
