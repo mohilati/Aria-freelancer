@@ -1,20 +1,13 @@
+from __future__ import annotations
+
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
 import httpx
 
-try:
-    from huggingface_hub import InferenceClient
-except ImportError:
-    InferenceClient = None
-
-try:
-    import fal_client
-except ImportError:
-    fal_client = None
-
-OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test"))
+OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -26,63 +19,88 @@ def _hf_token() -> Optional[str]:
     )
 
 
-def _save(data: bytes, path: Path) -> str:
+def _save(data: bytes, output_path: Optional[str], suffix: str) -> str:
+    path = Path(
+        output_path
+        or OUTPUT_DIR / f"audio-{time.time_ns()}{suffix}"
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return str(path)
 
 
-def _download(url: str, path: Path) -> str:
-    with httpx.Client(timeout=600, follow_redirects=True) as client:
-        r = client.get(url)
-        r.raise_for_status()
-        return _save(r.content, path)
+def _download(url: str, output_path: Optional[str], suffix: str) -> str:
+    with httpx.Client(timeout=900, follow_redirects=True) as client:
+        response = client.get(url)
+        response.raise_for_status()
+        return _save(response.content, output_path, suffix)
 
 
-def huggingface_tts(text: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
-    if InferenceClient is None:
-        raise RuntimeError("huggingface_hub is not installed")
-
+def huggingface_tts(
+    text: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
     token = _hf_token()
     if not token:
         raise RuntimeError("HF token is not configured")
 
-    # Kokoro is documented by HF for the Replicate provider.
-    model = "hexgrad/Kokoro-82M"
-    output = Path(output_path or OUTPUT_DIR / "tts-huggingface.flac")
+    from huggingface_hub import InferenceClient
 
-    client = InferenceClient(
-        provider="replicate",
-        api_key=token,
-        timeout=300,
+    model = kwargs.get("model") or os.getenv(
+        "HF_TTS_MODEL",
+        "hexgrad/Kokoro-82M",
+    )
+    provider = kwargs.get("provider") or os.getenv(
+        "HF_TTS_PROVIDER",
+        "replicate",
+    )
+    voice = kwargs.get("voice") or os.getenv(
+        "HF_TTS_VOICE",
+        "af_nicole",
     )
 
+    client = InferenceClient(
+        provider=provider,
+        api_key=token,
+        timeout=600,
+    )
     audio = client.text_to_speech(
         text=text,
         model=model,
-        extra_body={"voice": "af_nicole"},
+        extra_body={"voice": voice},
     )
 
     if isinstance(audio, bytes):
-        return _save(audio, output)
-
+        return _save(audio, output_path, ".flac")
     if isinstance(audio, bytearray):
-        return _save(bytes(audio), output)
+        return _save(bytes(audio), output_path, ".flac")
 
-    raise RuntimeError(f"Unexpected HF TTS response: {type(audio).__name__}")
+    raise RuntimeError(
+        f"Unexpected HF TTS response: {type(audio).__name__}"
+    )
 
 
-def elevenlabs_tts(text: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
+def elevenlabs_tts(
+    text: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
     api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         raise RuntimeError("ELEVENLABS_API_KEY is not configured")
 
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID") or "JBFqnCBsd6RMkjVDRZzb"
-    model_id = os.getenv("ELEVENLABS_MODEL_ID") or "eleven_multilingual_v2"
-    output = Path(output_path or OUTPUT_DIR / "tts-elevenlabs.mp3")
+    voice_id = kwargs.get("voice_id") or os.getenv(
+        "ELEVENLABS_VOICE_ID",
+        "JBFqnCBsd6RMkjVDRZzb",
+    )
+    model_id = kwargs.get("model_id") or os.getenv(
+        "ELEVENLABS_MODEL_ID",
+        "eleven_multilingual_v2",
+    )
 
-    with httpx.Client(timeout=180, follow_redirects=True) as client:
-        r = client.post(
+    with httpx.Client(timeout=300, follow_redirects=True) as client:
+        response = client.post(
             f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
             headers={
                 "xi-api-key": api_key,
@@ -95,58 +113,71 @@ def elevenlabs_tts(text: str, output_path: Optional[str] = None, **kwargs) -> Op
                 "output_format": "mp3_44100_128",
             },
         )
-        r.raise_for_status()
-        return _save(r.content, output)
+        response.raise_for_status()
+        return _save(response.content, output_path, ".mp3")
 
 
-def huggingface_musicgen(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
-    if InferenceClient is None:
-        raise RuntimeError("huggingface_hub is not installed")
-
+def huggingface_musicgen(
+    prompt: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
     token = _hf_token()
     if not token:
         raise RuntimeError("HF token is not configured")
 
-    # HF's current InferenceClient documentation uses this exact
-    # model/provider combination for music generation.
-    model = "m-a-p/YuE-s1-7B-anneal-en-cot"
-    output = Path(output_path or OUTPUT_DIR / "music-huggingface.mp3")
+    from huggingface_hub import InferenceClient
+
+    model = kwargs.get("model") or os.getenv(
+        "HF_MUSIC_MODEL",
+        "m-a-p/YuE-s1-7B-anneal-en-cot",
+    )
+    provider = kwargs.get("provider") or os.getenv(
+        "HF_MUSIC_PROVIDER",
+        "fal-ai",
+    )
 
     client = InferenceClient(
-        provider="fal-ai",
+        provider=provider,
         model=model,
         api_key=token,
         timeout=900,
     )
 
-    lyrics = kwargs.get("lyrics", prompt)
-    genres = kwargs.get(
-        "genres",
-        "professional cinematic technology background music",
-    )
-
     audio = client.text_to_speech(
-        lyrics,
-        extra_body={"genres": genres},
+        kwargs.get("lyrics", prompt),
+        extra_body={
+            "genres": kwargs.get(
+                "genres",
+                "cinematic electronic technology background music",
+            )
+        },
     )
 
     if isinstance(audio, bytes):
-        return _save(audio, output)
-
+        return _save(audio, output_path, ".mp3")
     if isinstance(audio, bytearray):
-        return _save(bytes(audio), output)
+        return _save(bytes(audio), output_path, ".mp3")
 
-    raise RuntimeError(f"Unexpected HF music response: {type(audio).__name__}")
+    raise RuntimeError(
+        f"Unexpected HF music response: {type(audio).__name__}"
+    )
 
 
-def fal_music(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
-    if fal_client is None:
-        raise RuntimeError("fal-client is not installed")
+def fal_music(
+    prompt: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
     if not os.getenv("FAL_KEY"):
         raise RuntimeError("FAL_KEY is not configured")
 
-    model = "fal-ai/stable-audio-3/small/music/text-to-audio"
-    output = Path(output_path or OUTPUT_DIR / "music-fal.mp3")
+    import fal_client
+
+    model = kwargs.get("model") or os.getenv(
+        "FAL_MUSIC_MODEL",
+        "fal-ai/stable-audio-3/small/music/text-to-audio",
+    )
 
     result = fal_client.subscribe(
         model,
@@ -158,14 +189,15 @@ def fal_music(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optio
         with_logs=False,
     )
 
-    if isinstance(result, dict):
-        audio = result.get("audio")
-        if isinstance(audio, dict) and audio.get("url"):
-            return _download(audio["url"], output)
-        if isinstance(result.get("audio_url"), str):
-            return _download(result["audio_url"], output)
+    audio = result.get("audio") if isinstance(result, dict) else None
+    if isinstance(audio, dict) and audio.get("url"):
+        return _download(audio["url"], output_path, ".mp3")
+    if isinstance(audio, str):
+        return _download(audio, output_path, ".mp3")
+    if isinstance(result, dict) and isinstance(result.get("audio_url"), str):
+        return _download(result["audio_url"], output_path, ".mp3")
 
-    raise RuntimeError("FAL Music response did not contain an audio URL")
+    raise RuntimeError("FAL music response did not contain an audio URL")
 
 
 MUSIC_PROVIDERS = {

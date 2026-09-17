@@ -1,10 +1,15 @@
-import os
-from dataclasses import dataclass
-from typing import List, Optional
+from __future__ import annotations
 
-from image_provider import IMAGE_PROVIDERS
-from video_provider import VIDEO_PROVIDERS
-from audio_provider import TTS_PROVIDERS, MUSIC_PROVIDERS
+from dataclasses import dataclass
+from typing import Optional
+
+from aria_provider_pool import (
+    generate_image,
+    generate_video,
+    generate_tts,
+    generate_music,
+    provider_stats,
+)
 
 
 @dataclass
@@ -12,67 +17,38 @@ class ProviderResult:
     ok: bool
     provider: str
     output_path: Optional[str] = None
+    output_url: Optional[str] = None
     error: Optional[str] = None
     skipped: bool = False
+    reason: Optional[str] = None
 
 
-def _chain(env_name: str, default: List[str]) -> List[str]:
-    raw = os.getenv(env_name, "")
-    return [x.strip() for x in raw.split(",") if x.strip()] or default
+def _convert(result) -> ProviderResult:
+    return ProviderResult(
+        ok=bool(result.ok),
+        provider=result.provider,
+        output_path=result.output_path,
+        output_url=getattr(result, "output_url", None),
+        error=result.error,
+        skipped=bool(result.skipped),
+        reason=getattr(result, "reason", None),
+    )
 
 
 class MediaRouter:
-    def __init__(self) -> None:
-        self.image_chain = _chain(
-            "IMAGE_PROVIDER",
-            ["huggingface_image", "fal_image", "replicate_image"],
-        )
-        self.video_chain = _chain(
-            "VIDEO_PROVIDER",
-            ["huggingface_video", "fal_video", "replicate_video"],
-        )
-        self.tts_chain = _chain(
-            "TTS_PROVIDER",
-            ["huggingface_tts", "elevenlabs_tts"],
-        )
-        self.music_chain = _chain(
-            "MUSIC_PROVIDER",
-            ["huggingface_musicgen", "fal_music"],
-        )
-
-    def _run(self, names, registry, kind, **kwargs) -> ProviderResult:
-        errors = []
-        for name in names:
-            fn = registry.get(name)
-            if fn is None:
-                errors.append(f"{name}: not registered")
-                continue
-            try:
-                result = fn(**kwargs)
-                if result:
-                    return ProviderResult(True, name, output_path=result)
-                errors.append(f"{name}: no output")
-            except Exception as exc:
-                errors.append(f"{name}: {type(exc).__name__}: {exc}")
-
-        return ProviderResult(
-            False,
-            "none",
-            error=f"{kind} providers exhausted: " + " | ".join(errors),
-            skipped=True,
-        )
+    """Public media API used by the rest of Aria."""
 
     def generate_image(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.image_chain, IMAGE_PROVIDERS, "image", prompt=prompt, **kwargs)
+        return _convert(generate_image(prompt, **kwargs))
 
     def generate_video(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.video_chain, VIDEO_PROVIDERS, "video", prompt=prompt, **kwargs)
+        return _convert(generate_video(prompt, **kwargs))
 
     def generate_tts(self, text: str, **kwargs) -> ProviderResult:
-        return self._run(self.tts_chain, TTS_PROVIDERS, "tts", text=text, **kwargs)
+        return _convert(generate_tts(text, **kwargs))
 
     def generate_music(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.music_chain, MUSIC_PROVIDERS, "music", prompt=prompt, **kwargs)
+        return _convert(generate_music(prompt, **kwargs))
 
     def generate_audio(self, kind: str, **kwargs) -> ProviderResult:
         if kind == "tts":
@@ -80,3 +56,6 @@ class MediaRouter:
         if kind == "music":
             return self.generate_music(**kwargs)
         raise ValueError(f"Unsupported audio kind: {kind}")
+
+    def provider_stats(self):
+        return provider_stats()

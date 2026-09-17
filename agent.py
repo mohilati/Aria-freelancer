@@ -34,8 +34,10 @@ def media_result_dict(result):
         "ok": bool(result.ok),
         "provider": result.provider,
         "output": result.output_path,
+        "output_url": getattr(result, "output_url", None),
         "error": result.error,
         "skipped": bool(result.skipped),
+        "reason": getattr(result, "reason", None),
     }
 
 
@@ -89,6 +91,7 @@ def run_media_test(job, job_id):
         "video": None,
         "tts": None,
         "music": None,
+        "provider_stats_before": MEDIA_ROUTER.provider_stats(),
     }
 
     image_prompt = config.get("image", {}).get("prompt")
@@ -210,8 +213,24 @@ def run_media_test(job, job_id):
         )
     )
 
+    requested = [
+        key for key in ("image", "video", "tts", "music")
+        if isinstance(config.get(key), dict)
+        and any(
+            value
+            for value in config.get(key, {}).values()
+            if isinstance(value, str) and value.strip()
+        )
+    ]
+
     results["successful_count"] = successful
-    results["total_tests"] = 4
+    results["requested_count"] = len(requested)
+    results["all_requested_succeeded"] = (
+        bool(requested)
+        and successful == len(requested)
+    )
+    results["provider_stats_after"] = MEDIA_ROUTER.provider_stats()
+    results["total_tests"] = len(requested)
 
     print("=" * 60)
     print(
@@ -355,7 +374,7 @@ def process(job_file):
             "completed"
             if (
                 media_results
-                and media_results.get("successful_count", 0) > 0
+                and media_results.get("all_requested_succeeded", False)
             )
             else "needs_manual_review"
         )
@@ -609,6 +628,7 @@ def process(job_file):
         else None
     )
     job["media_results"] = media_results
+    job["provider_stats"] = MEDIA_ROUTER.provider_stats()
     job["final_review_status"] = (
         final_review.get("status")
         if final_review
