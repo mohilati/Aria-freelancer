@@ -11,8 +11,11 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HF_TOKEN_1") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
 REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+FAL_KEY = os.getenv("FAL_KEY")
+
 HF_IMAGE_MODEL = os.getenv("HF_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
 REPLICATE_IMAGE_MODEL = os.getenv("REPLICATE_IMAGE_MODEL", "")
+FAL_IMAGE_MODEL = os.getenv("FAL_IMAGE_MODEL", "fal-ai/flux/schnell")
 
 
 def _save(data: bytes, suffix=".png") -> str:
@@ -21,21 +24,45 @@ def _save(data: bytes, suffix=".png") -> str:
     return str(path)
 
 
+def fal_image(prompt: str, **kwargs: Any) -> Optional[str]:
+    if not FAL_KEY:
+        return None
+
+    import fal_client
+
+    result = fal_client.subscribe(
+        FAL_IMAGE_MODEL,
+        arguments={
+            "prompt": prompt,
+            "image_size": kwargs.get("image_size", "square_hd"),
+            "num_images": 1,
+        },
+    )
+    images = result.get("images") or []
+    if not images:
+        raise RuntimeError("fal returned no image output")
+
+    url = images[0].get("url")
+    if not url:
+        raise RuntimeError("fal image result has no URL")
+
+    with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+        media = client.get(url)
+        media.raise_for_status()
+        return _save(media.content)
+
+
 def huggingface_image(prompt: str, **kwargs: Any) -> Optional[str]:
     if not HF_TOKEN:
         return None
 
-    # Current Hugging Face Inference Providers route through InferenceClient.
     from huggingface_hub import InferenceClient
 
     client = InferenceClient(
         provider=os.getenv("HF_IMAGE_PROVIDER", "fal-ai"),
         api_key=HF_TOKEN,
     )
-    image = client.text_to_image(
-        prompt,
-        model=HF_IMAGE_MODEL,
-    )
+    image = client.text_to_image(prompt, model=HF_IMAGE_MODEL)
     path = OUTPUT_DIR / f"image-{uuid.uuid4().hex}.png"
     image.save(path)
     return str(path)
@@ -90,6 +117,7 @@ def replicate_image(prompt: str, **kwargs: Any) -> Optional[str]:
 
 
 IMAGE_PROVIDERS = {
+    "fal_image": fal_image,
     "huggingface_image": huggingface_image,
     "replicate_image": replicate_image,
 }
