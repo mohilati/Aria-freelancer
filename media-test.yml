@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   media-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v5
 
       - name: Setup Python
@@ -21,11 +21,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-media.txt
+        run: pip install -r requirements.txt
 
-      - name: Run media test
+      - name: Run media stack test
         env:
           ARIA_OUTPUT_DIR: outputs/media-test
 
@@ -34,30 +32,35 @@ jobs:
           HUGGINGFACEHUB_API_TOKEN: ${{ secrets.HUGGINGFACEHUB_API_TOKEN }}
 
           HF_IMAGE_MODEL: black-forest-labs/FLUX.1-schnell
-          HF_IMAGE_PROVIDER: fal-ai
 
-          HF_VIDEO_MODEL: Wan-AI/Wan2.1-T2V-1.3B
-          HF_VIDEO_PROVIDER: fal-ai
+          HF_VIDEO_MODEL: Wan-AI/Wan2.2-TI2V-5B
+          HF_VIDEO_PROVIDER: replicate
 
-          HF_TTS_MODEL: espnet/kan-bayashi_ljspeech_vits
-          HF_MUSIC_MODEL: facebook/musicgen-small
+          HF_TTS_MODEL: hexgrad/Kokoro-82M
+          HF_TTS_PROVIDER: replicate
+
+          HF_MUSIC_MODEL: m-a-p/YuE-s1-7B-anneal-en-cot
+          HF_MUSIC_PROVIDER: fal-ai
 
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           REPLICATE_IMAGE_MODEL: ${{ vars.REPLICATE_IMAGE_MODEL }}
           REPLICATE_VIDEO_MODEL: ${{ vars.REPLICATE_VIDEO_MODEL }}
 
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          FAL_IMAGE_MODEL: ${{ vars.FAL_IMAGE_MODEL }}
+          FAL_VIDEO_MODEL: ${{ vars.FAL_VIDEO_MODEL }}
+          FAL_MUSIC_MODEL: ${{ vars.FAL_MUSIC_MODEL }}
+
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
-
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LYRIA_MODEL: lyria-3.5
+          ELEVENLABS_MODEL_ID: eleven_multilingual_v2
 
         run: python test_media_stack.py
 
-      - name: Upload results
+      - name: Upload media test outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aria-media-test-v2
+          name: aria-media-test-results
           path: outputs/media-test/
           if-no-files-found: ignore

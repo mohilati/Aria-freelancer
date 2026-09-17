@@ -23,38 +23,92 @@ def _chain(env_name: str, default: List[str]) -> List[str]:
 
 class MediaRouter:
     def __init__(self) -> None:
-        self.image_chain = _chain("IMAGE_PROVIDER", ["huggingface_image", "fal_image", "replicate_image"])
-        self.video_chain = _chain("VIDEO_PROVIDER", ["huggingface_video", "fal_video", "replicate_video"])
-        self.tts_chain = _chain("TTS_PROVIDER", ["huggingface_tts", "elevenlabs_tts"])
-        self.music_chain = _chain("MUSIC_PROVIDER", ["huggingface_musicgen", "fal_music"])
+        self.image_chain = _chain(
+            "IMAGE_PROVIDER",
+            ["huggingface_image", "fal_image", "replicate_image"],
+        )
+        self.video_chain = _chain(
+            "VIDEO_PROVIDER",
+            ["huggingface_video", "fal_video", "replicate_video"],
+        )
+        self.tts_chain = _chain(
+            "TTS_PROVIDER",
+            ["huggingface_tts", "elevenlabs_tts"],
+        )
+        self.music_chain = _chain(
+            "MUSIC_PROVIDER",
+            ["huggingface_musicgen", "fal_music"],
+        )
 
     def _run(self, names, registry, kind, **kwargs) -> ProviderResult:
         errors = []
+
         for name in names:
             fn = registry.get(name)
+
             if fn is None:
                 errors.append(f"{name}: not registered")
                 continue
+
             try:
                 result = fn(**kwargs)
+
                 if result:
-                    return ProviderResult(True, name, output_path=result)
+                    return ProviderResult(
+                        True,
+                        name,
+                        output_path=result,
+                    )
+
                 errors.append(f"{name}: no output")
+
             except Exception as exc:
-                errors.append(f"{name}: {type(exc).__name__}: {exc}")
-        return ProviderResult(False, "none", error=f"{kind} providers exhausted: " + " | ".join(errors), skipped=True)
+                errors.append(
+                    f"{name}: {type(exc).__name__}: {exc}"
+                )
+
+        return ProviderResult(
+            False,
+            "none",
+            error=f"{kind} providers exhausted: " + " | ".join(errors),
+            skipped=True,
+        )
 
     def generate_image(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.image_chain, IMAGE_PROVIDERS, "image", prompt=prompt, **kwargs)
+        return self._run(
+            self.image_chain,
+            IMAGE_PROVIDERS,
+            "image",
+            prompt=prompt,
+            **kwargs,
+        )
 
     def generate_video(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.video_chain, VIDEO_PROVIDERS, "video", prompt=prompt, **kwargs)
+        return self._run(
+            self.video_chain,
+            VIDEO_PROVIDERS,
+            "video",
+            prompt=prompt,
+            **kwargs,
+        )
 
     def generate_tts(self, text: str, **kwargs) -> ProviderResult:
-        return self._run(self.tts_chain, TTS_PROVIDERS, "tts", text=text, **kwargs)
+        return self._run(
+            self.tts_chain,
+            TTS_PROVIDERS,
+            "tts",
+            text=text,
+            **kwargs,
+        )
 
     def generate_music(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.music_chain, MUSIC_PROVIDERS, "music", prompt=prompt, **kwargs)
+        return self._run(
+            self.music_chain,
+            MUSIC_PROVIDERS,
+            "music",
+            prompt=prompt,
+            **kwargs,
+        )
 
     def generate_audio(self, kind: str, **kwargs) -> ProviderResult:
         if kind == "tts":
