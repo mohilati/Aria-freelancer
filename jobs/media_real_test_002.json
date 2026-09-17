@@ -1,6 +1,6 @@
 {
   "id": "media-real-test-002",
-  "status": "pending",
+  "status": "completed",
   "brief": "یک بسته محتوایی کوتاه برای یک پیج اینستاگرامی فارسی در حوزه رشد فردی تولید کن و برای آن مدیای آزمایشی بساز.",
   "platform": "Instagram",
   "language": "Persian",
@@ -25,5 +25,75 @@
     "video": true,
     "tts": true,
     "music": true
-  }
+  },
+  "output": "outputs/media-real-test-002.md",
+  "content_plan": {
+    "content_goal": "افزایش تعامل و مشارکت مخاطبان از طریق ایجاد گفتگو درباره چالش‌های واقعی رشد فردی و ارائه راهکارهای عملی روزمره",
+    "audience_angle": "نگاه به رشد فردی نه به‌عنوان یک تغییر ناگهانی و آرمانی، بلکه به‌عنوان ساخت قدم‌های کوچک، ساده و مستمر در زندگی واقعی",
+    "core_message": "تغییرات بزرگ حاصل استمرار در عادت‌های کوچک و روزمره است؛ با خودت مهربان باش و از مسیر رشد لذت ببر.",
+    "content_pillars": [
+      "ساخت عادت‌های مفید و پایدار",
+      "مدیریت تمرکز و کاهش اهمال‌کاری",
+      "خودمراقبتی ذهنی و غلبه بر کمال‌گرایی"
+    ],
+    "formats": [
+      "پست اسلایدی (Carousel)",
+      "ویدیو کوتاه (Reels)",
+      "استوری تعاملی (Interactive Story)"
+    ],
+    "hooks": [
+      "چرا برنامه‌ریزی‌های شلوغ معمولاً روز دوم شکست می‌خورن؟",
+      "یک روش ساده ۲ دقیقه‌ای برای وقتی که هیچ حوصله‌ای برای شروع کار نداری!",
+      "اگه احساس می‌کنی عقب افتادی، این سه نکته رو یادآوری کن."
+    ],
+    "call_to_action": "تو معمولاً با کدام چالش بیشتر روبرو می‌شی؟ نظرت رو توی کامنت‌ها بنویس تا با هم در موردش صحبت کنیم.",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "قانون ۲ دقیقه برای شروع کارهای سخت",
+        "format": "ویدیو کوتاه (Reels)",
+        "hook": "وقتی حوصله هیچ کاری رو نداری، فقط این یک قدم رو بردار!"
+      },
+      {
+        "day": 2,
+        "topic": "۳ قدم برای رهایی از کمال‌گرایی منفی",
+        "format": "پست اسلایدی (Carousel)",
+        "hook": "کمال‌گرایی چطور آروم آروم جلوی پیشرفتت رو می‌گیره؟"
+      },
+      {
+        "day": 3,
+        "topic": "ارزیابی عادت‌های این هفته",
+        "format": "استوری تعاملی (سنجش نظرات و باکس سوال)",
+        "hook": "این هفته چقدر به قول‌هایی که به خودت داده بودی عمل کردی؟"
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review": {
+    "status": "approved",
+    "score": 98,
+    "issues": [],
+    "missing_deliverables": [],
+    "revision_instructions": [],
+    "reviewer": "aria-review-agent-v1",
+    "attempt": 1,
+    "round": 1
+  },
+  "review_history": [
+    {
+      "status": "approved",
+      "score": 98,
+      "issues": [],
+      "missing_deliverables": [],
+      "revision_instructions": [],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    }
+  ],
+  "review_rounds": 1,
+  "revision_count": 0,
+  "cover_image": null,
+  "media_results": null,
+  "final_review_status": "approved"
 }
