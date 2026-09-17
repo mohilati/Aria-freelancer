@@ -1,0 +1,317 @@
+{
+  "provider_stats_before": {
+    "date": "2026-09-17",
+    "providers": {
+      "elevenlabs_tts": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "fal_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "fal_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "fal_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_musicgen": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_tts": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "json2video_render": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "kie_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "kie_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "kie_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "krea_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "krea_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pixazo_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pixazo_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pollinations_audio": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pollinations_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pollinations_tts": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "replicate_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "replicate_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "suno_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      }
+    }
+  },
+  "tests": {
+    "image": {
+      "ok": true,
+      "provider": "pollinations_image",
+      "output": "outputs/media-test/pollinations-image-c766078e32-8dc844dd39.jpg",
+      "output_url": null,
+      "error": null,
+      "skipped": false,
+      "reason": null
+    },
+    "video": {
+      "ok": true,
+      "provider": "huggingface_video",
+      "output": "outputs/media-test/video-1789680051673012959.mp4",
+      "output_url": null,
+      "error": null,
+      "skipped": false,
+      "reason": null
+    },
+    "tts": {
+      "ok": true,
+      "provider": "elevenlabs_tts",
+      "output": "outputs/media-test/audio-1789680053031072619.mp3",
+      "output_url": null,
+      "error": null,
+      "skipped": false,
+      "reason": null
+    },
+    "music": {
+      "ok": false,
+      "provider": "none",
+      "output": null,
+      "output_url": null,
+      "error": "music providers exhausted: suno_music: UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol. | kie_music: RuntimeError: KIE_AUDIO_ENDPOINT is not configured | pollinations_audio: TypeError: pollinations_tts() missing 1 required positional argument: 'text' | huggingface_musicgen: ValueError: Model m-a-p/YuE-s1-7B-anneal-en-cot is not supported by provider fal-ai. | fal_music: FalClientHTTPError: User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing.",
+      "skipped": true,
+      "reason": "all configured providers were unavailable, capped, or failed"
+    }
+  },
+  "provider_stats_after": {
+    "date": "2026-09-17",
+    "providers": {
+      "elevenlabs_tts": {
+        "used_today": 1,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "fal_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "fal_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "fal_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_musicgen": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "huggingface_tts": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "huggingface_video": {
+        "used_today": 1,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "json2video_render": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "kie_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "kie_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "kie_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "krea_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "krea_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "pixazo_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pixazo_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "pollinations_audio": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      },
+      "pollinations_image": {
+        "used_today": 1,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "pollinations_tts": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "replicate_image": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "replicate_video": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": true
+      },
+      "suno_music": {
+        "used_today": 0,
+        "local_cap": null,
+        "remaining_local": null,
+        "available": false
+      }
+    }
+  },
+  "successful_count": 3,
+  "total_count": 4,
+  "all_succeeded": false
+}

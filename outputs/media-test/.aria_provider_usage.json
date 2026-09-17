@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-17",
+  "usage": {
+    "pollinations_image": 1,
+    "huggingface_video": 1,
+    "elevenlabs_tts": 1
+  },
+  "cooldowns": {
+    "krea_video": 1789680339.1790776,
+    "kie_video": 1789680339.1944182,
+    "pixazo_video": 1789680339.203659,
+    "suno_music": 1789680353.049434,
+    "kie_music": 1789680353.0497353,
+    "pollinations_audio": 1789680353.049957,
+    "huggingface_musicgen": 1789680353.0772984,
+    "fal_music": 1789680353.3165836
+  },
+  "cursor": {
+    "image": 1,
+    "video": 4,
+    "tts": 1
+  }
+}
