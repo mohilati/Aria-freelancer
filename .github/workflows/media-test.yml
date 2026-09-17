@@ -1,0 +1,63 @@
+name: Aria Media Stack Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  media-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run media stack test
+        env:
+          ARIA_OUTPUT_DIR: outputs/media-test
+
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_1: ${{ secrets.HF_TOKEN_1 }}
+          HUGGINGFACEHUB_API_TOKEN: ${{ secrets.HUGGINGFACEHUB_API_TOKEN }}
+
+          HF_IMAGE_MODEL: black-forest-labs/FLUX.1-schnell
+          HF_VIDEO_MODEL: Wan-AI/Wan2.1-T2V-1.3B
+          HF_TTS_MODEL: espnet/kan-bayashi_ljspeech_vits
+          HF_MUSIC_MODEL: facebook/musicgen-small
+
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          REPLICATE_IMAGE_MODEL: ${{ vars.REPLICATE_IMAGE_MODEL }}
+          REPLICATE_VIDEO_MODEL: ${{ vars.REPLICATE_VIDEO_MODEL }}
+
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          FAL_IMAGE_MODEL: ${{ vars.FAL_IMAGE_MODEL }}
+          FAL_VIDEO_MODEL: ${{ vars.FAL_VIDEO_MODEL }}
+          FAL_MUSIC_MODEL: ${{ vars.FAL_MUSIC_MODEL }}
+
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+          ELEVENLABS_MODEL_ID: eleven_multilingual_v2
+
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LYRIA_MODEL: lyria-3.5
+
+        run: python test_media_stack.py
+
+      - name: Upload media test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-media-test-results
+          path: outputs/media-test/
+          if-no-files-found: ignore
