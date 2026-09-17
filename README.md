@@ -1,18 +1,41 @@
-# Aria Freelancer v2
+# Aria Media Stack Test
 
-AI content freelancer with automatic AI provider failover.
+این تست هر چهار مسیر را یک‌بار اجرا می‌کند:
 
-Provider order:
-1. Gemini
-2. OpenRouter
-3. Cerebras
+1. Image
+2. Video
+3. TTS
+4. Music
 
-Required GitHub Actions secrets:
-- GEMINI_API_KEY
-- OPENROUTER_API_KEY
-- CEREBRAS_API_KEY
+فایل `test_media_stack.py` را در ریشه repo بگذار.
 
-Optional job fields:
-platform, language, audience, tone, goal, content_type, brand_voice, constraints, review_required.
+## اجرای دستی
 
-The original brief/deliverables/status/output workflow remains compatible.
+```bash
+python test_media_stack.py
+```
+
+## اجرای GitHub Actions
+
+فایل `.github/workflows/media-test.yml` را در مسیر گفته‌شده قرار بده، سپس از:
+
+Actions → Aria Media Stack Test → Run workflow
+
+اجرا کن.
+
+## Secrets / Variables
+
+Secrets:
+- `HF_TOKEN_1` (یا `HF_TOKEN`)
+- `REPLICATE_API_TOKEN`
+- `FAL_KEY`
+- `ELEVENLABS_API_KEY`
+- `GEMINI_API_KEY`
+
+Repository Variables:
+- `REPLICATE_IMAGE_MODEL`
+- `REPLICATE_VIDEO_MODEL`
+- `FAL_VIDEO_MODEL`
+- `ELEVENLABS_VOICE_ID`
+
+نکته: providerهایی که هنوز endpoint واقعی‌شان در فایل provider پیاده‌سازی نشده باشد، در گزارش `SKIP` می‌شوند؛ این به معنی سالم بودن API نیست، بلکه یعنی آن provider هنوز فعال نشده است.
