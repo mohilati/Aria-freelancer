@@ -1,120 +1,226 @@
 import os
 import time
-import uuid
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-import httpx
+import requests
+from huggingface_hub import InferenceClient
 
-OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs"))
+
+OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HF_TOKEN_1") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
-REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
-FAL_KEY = os.getenv("FAL_KEY")
 
-HF_VIDEO_MODEL = os.getenv("HF_VIDEO_MODEL", "Wan-AI/Wan2.1-T2V-1.3B")
-REPLICATE_VIDEO_MODEL = os.getenv("REPLICATE_VIDEO_MODEL", "")
-FAL_VIDEO_MODEL = os.getenv("FAL_VIDEO_MODEL", "fal-ai/wan/v2.7/text-to-video")
+def _save_video(data: bytes, prefix: str = "video") -> str:
+    if not data:
+        raise RuntimeError("Video provider returned empty data")
 
+    filename = f"{prefix}-{int(time.time() * 1000)}.mp4"
+    path = OUTPUT_DIR / filename
 
-def _save(data: bytes, suffix=".mp4") -> str:
-    path = OUTPUT_DIR / f"video-{uuid.uuid4().hex}{suffix}"
     path.write_bytes(data)
+
+    if path.stat().st_size == 0:
+        raise RuntimeError("Video file was created but is empty")
+
     return str(path)
 
 
-def fal_video(prompt: str, **kwargs: Any) -> Optional[str]:
-    if not FAL_KEY:
+def huggingface_video(
+    prompt: str,
+    model: Optional[str] = None,
+    **kwargs,
+) -> str:
+    """
+    Generate text-to-video through Hugging Face Inference Providers.
+
+    InferenceClient.text_to_video() returns raw video bytes,
+    so there is no {"video": ...} response object to parse.
+    """
+
+    token = (
+        os.getenv("HF_TOKEN")
+        or os.getenv("HF_TOKEN_1")
+        or os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    )
+
+    if not token:
+        raise RuntimeError("HF_TOKEN is not configured")
+
+    model = model or os.getenv(
+        "HF_VIDEO_MODEL",
+        "Wan-AI/Wan2.1-T2V-1.3B",
+    )
+
+    client = InferenceClient(
+        provider="fal-ai",
+        api_key=token,
+    )
+
+    params = {}
+
+    for key in (
+        "guidance_scale",
+        "num_frames",
+        "num_inference_steps",
+        "seed",
+    ):
+        value = kwargs.get(key)
+        if value is not None:
+            params[key] = value
+
+    negative_prompt = kwargs.get("negative_prompt")
+    if negative_prompt:
+        if isinstance(negative_prompt, str):
+            negative_prompt = [negative_prompt]
+        params["negative_prompt"] = negative_prompt
+
+    video_bytes = client.text_to_video(
+        prompt,
+        model=model,
+        **params,
+    )
+
+    return _save_video(video_bytes, "hf-video")
+
+
+def replicate_video(
+    prompt: str,
+    model: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
+    """
+    Replicate fallback.
+
+    This remains intentionally conservative: if no Replicate model
+    is configured, return no output so MediaRouter can continue.
+    """
+
+    token = os.getenv("REPLICATE_API_TOKEN")
+    model = model or os.getenv("REPLICATE_VIDEO_MODEL")
+
+    if not token or not model:
         return None
 
+    try:
+        response = requests.post(
+            "https://api.replicate.com/v1/predictions",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "version": model,
+                "input": {
+                    "prompt": prompt,
+                },
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+
+        prediction = response.json()
+
+        for _ in range(60):
+            status_url = prediction.get("urls", {}).get("get")
+
+            if not status_url:
+                return None
+
+            status_response = requests.get(
+                status_url,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=30,
+            )
+            status_response.raise_for_status()
+
+            data = status_response.json()
+            status = data.get("status")
+
+            if status == "succeeded":
+                output = data.get("output")
+
+                if isinstance(output, list):
+                    output = output[0] if output else None
+
+                if not output:
+                    return None
+
+                video_response = requests.get(output, timeout=120)
+                video_response.raise_for_status()
+
+                return _save_video(video_response.content, "replicate-video")
+
+            if status in {"failed", "canceled"}:
+                return None
+
+            time.sleep(5)
+
+    except Exception:
+        return None
+
+    return None
+
+
+def fal_video(
+    prompt: str,
+    model: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
+    """
+    Direct fal.ai provider.
+
+    Requires FAL_KEY and fal-client.
+    """
+
+    key = os.getenv("FAL_KEY")
+
+    if not key:
+        raise RuntimeError("FAL_KEY is not configured")
+
     import fal_client
+
+    model = model or os.getenv(
+        "FAL_VIDEO_MODEL",
+        "fal-ai/wan/v2.7/text-to-video",
+    )
 
     arguments = {
         "prompt": prompt,
     }
-    if kwargs.get("aspect_ratio"):
-        arguments["aspect_ratio"] = kwargs["aspect_ratio"]
-    if kwargs.get("duration"):
-        arguments["duration"] = kwargs["duration"]
 
-    result = fal_client.subscribe(FAL_VIDEO_MODEL, arguments=arguments)
-    video = result.get("video") or {}
-    url = video.get("url")
-    if not url:
-        raise RuntimeError("fal returned no video output")
+    aspect_ratio = kwargs.get("aspect_ratio")
+    duration = kwargs.get("duration")
 
-    with httpx.Client(timeout=180.0, follow_redirects=True) as client:
-        media = client.get(url)
-        media.raise_for_status()
-        return _save(media.content)
+    if aspect_ratio:
+        arguments["aspect_ratio"] = aspect_ratio
 
+    if duration:
+        arguments["duration"] = duration
 
-def huggingface_video(prompt: str, **kwargs: Any) -> Optional[str]:
-    if not HF_TOKEN:
+    result = fal_client.subscribe(
+        model,
+        arguments=arguments,
+    )
+
+    video = result.get("video") if isinstance(result, dict) else None
+
+    if isinstance(video, dict):
+        video_url = video.get("url")
+    else:
+        video_url = video
+
+    if not video_url:
         return None
 
-    from huggingface_hub import InferenceClient
-
-    client = InferenceClient(
-        provider=os.getenv("HF_VIDEO_PROVIDER", "fal-ai"),
-        api_key=HF_TOKEN,
-    )
-    result = client.text_to_video(prompt, model=HF_VIDEO_MODEL)
-    data = result if isinstance(result, bytes) else bytes(result)
-    return _save(data)
-
-
-def _replicate_prediction(client: httpx.Client, model: str, payload: dict) -> dict:
-    response = client.post(
-        f"https://api.replicate.com/v1/models/{model}/predictions",
-        headers={
-            "Authorization": f"Bearer {REPLICATE_TOKEN}",
-            "Content-Type": "application/json",
-        },
-        json=payload,
-    )
+    response = requests.get(video_url, timeout=180)
     response.raise_for_status()
-    prediction = response.json()
 
-    for _ in range(180):
-        status = prediction.get("status")
-        if status == "succeeded":
-            return prediction
-        if status in {"failed", "canceled"}:
-            raise RuntimeError(prediction.get("error") or f"Replicate status={status}")
-        time.sleep(2)
-        response = client.get(
-            prediction["urls"]["get"],
-            headers={"Authorization": f"Bearer {REPLICATE_TOKEN}"},
-        )
-        response.raise_for_status()
-        prediction = response.json()
-
-    raise TimeoutError("Replicate prediction timed out")
-
-
-def replicate_video(prompt: str, **kwargs: Any) -> Optional[str]:
-    if not REPLICATE_TOKEN or not REPLICATE_VIDEO_MODEL:
-        return None
-
-    with httpx.Client(timeout=60.0, follow_redirects=True) as client:
-        prediction = _replicate_prediction(
-            client,
-            REPLICATE_VIDEO_MODEL,
-            {"input": {"prompt": prompt}},
-        )
-        output = prediction.get("output")
-        if not output:
-            raise RuntimeError("Replicate returned no video output")
-        output_url = output[0] if isinstance(output, list) else output
-        media = client.get(output_url)
-        media.raise_for_status()
-        return _save(media.content)
+    return _save_video(response.content, "fal-video")
 
 
 VIDEO_PROVIDERS = {
     "fal_video": fal_video,
-    "huggingface_video": huggingface_video,
     "replicate_video": replicate_video,
+    "huggingface_video": huggingface_video,
 }
