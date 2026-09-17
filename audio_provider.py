@@ -1,98 +1,28 @@
-"""
-audio_provider.py
-------------------
-Two separate provider chains live here: TTS_PROVIDERS (speech) and
-MUSIC_PROVIDERS (background music). Same contract as the other provider
-modules — return an output path or None.
-"""
-
-import os
-import time
-import logging
-
-logger = logging.getLogger("aria.audio_provider")
-
-OUTPUT_DIR = os.environ.get("ARIA_OUTPUT_DIR", "outputs")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-
-def _new_output_path(label, ext):
-    ts = int(time.time() * 1000)
-    return os.path.join(OUTPUT_DIR, f"{label}_{ts}.{ext}")
-
-
-# ---------- TTS ----------
-
-def huggingface_tts(text, **kwargs):
-    hf_token = os.environ.get("HF_TOKEN")
-    if not hf_token:
-        logger.info("HF_TOKEN not set — skipping huggingface_tts")
-        return None
-
-    import requests
-
-    model = kwargs.get("model", "espnet/kan-bayashi_ljspeech_vits")
-    url = f"https://api-inference.huggingface.co/models/{model}"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-
-    resp = requests.post(url, headers=headers, json={"inputs": text}, timeout=120)
-    resp.raise_for_status()
-
-    out_path = _new_output_path("tts", "wav")
-    with open(out_path, "wb") as f:
-        f.write(resp.content)
-    return out_path
-
-
-def local_tts(text, **kwargs):
-    """
-    Placeholder for a fully local/offline TTS (e.g. pyttsx3, Coqui TTS).
-    Useful as the last fallback since it never depends on a network call.
-    """
-    logger.info("local_tts not implemented yet — skipping")
-    return None
-
-
-# ---------- Music (MusicGen) ----------
-
-def musicgen_local(prompt, **kwargs):
-    """
-    Runs Meta's MusicGen locally via the `audiocraft` or `transformers`
-    library. Left unimplemented until you decide which size (small/
-    medium/large) fits your hardware — small (300M) is the realistic
-    default for modest GPUs/CPUs.
-    """
-    logger.info("musicgen_local not implemented yet — skipping")
-    return None
-
-
-def huggingface_musicgen(prompt, **kwargs):
-    hf_token = os.environ.get("HF_TOKEN")
-    if not hf_token:
-        logger.info("HF_TOKEN not set — skipping huggingface_musicgen")
-        return None
-
-    import requests
-
-    model = kwargs.get("model", "facebook/musicgen-small")
-    url = f"https://api-inference.huggingface.co/models/{model}"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-
-    resp = requests.post(url, headers=headers, json={"inputs": prompt}, timeout=180)
-    resp.raise_for_status()
-
-    out_path = _new_output_path("music", "wav")
-    with open(out_path, "wb") as f:
-        f.write(resp.content)
-    return out_path
-
-
-TTS_PROVIDERS = {
-    "huggingface": huggingface_tts,
-    "local": local_tts,
-}
-
-MUSIC_PROVIDERS = {
-    "huggingface": huggingface_musicgen,
-    "local": musicgen_local,
-}
+import os, uuid
+from pathlib import Path
+from typing import Any, Optional
+import httpx
+OUTPUT_DIR=Path(os.getenv("ARIA_OUTPUT_DIR","outputs")); OUTPUT_DIR.mkdir(parents=True,exist_ok=True)
+HF_TOKEN=os.getenv("HF_TOKEN") or os.getenv("HF_TOKEN_1") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
+ELEVENLABS_API_KEY=os.getenv("ELEVENLABS_API_KEY"); GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")
+HF_TTS_MODEL=os.getenv("HF_TTS_MODEL","espnet/kan-bayashi_ljspeech_vits"); HF_MUSIC_MODEL=os.getenv("HF_MUSIC_MODEL","facebook/musicgen-small")
+ELEVENLABS_VOICE_ID=os.getenv("ELEVENLABS_VOICE_ID",""); ELEVENLABS_MODEL_ID=os.getenv("ELEVENLABS_MODEL_ID","eleven_multilingual_v2")
+LYRIA_MODEL=os.getenv("LYRIA_MODEL","lyria-3.5")
+def _save(b,s):
+ p=OUTPUT_DIR/f"audio-{uuid.uuid4().hex}{s}"; p.write_bytes(b); return str(p)
+def elevenlabs_tts(text:str,**kwargs:Any)->Optional[str]:
+ if not ELEVENLABS_API_KEY or not ELEVENLABS_VOICE_ID:return None
+ with httpx.Client(timeout=180,follow_redirects=True) as c:
+  r=c.post(f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",headers={"xi-api-key":ELEVENLABS_API_KEY,"Content-Type":"application/json","Accept":"audio/mpeg"},json={"text":text,"model_id":ELEVENLABS_MODEL_ID}); r.raise_for_status(); return _save(r.content,".mp3")
+def huggingface_tts(text:str,**kwargs:Any)->Optional[str]:
+ if not HF_TOKEN:return None
+ with httpx.Client(timeout=180,follow_redirects=True) as c:
+  r=c.post(f"https://api-inference.huggingface.co/models/{HF_TTS_MODEL}",headers={"Authorization":f"Bearer {HF_TOKEN}"},json={"inputs":text}); r.raise_for_status(); return _save(r.content,".wav")
+def lyria_music(prompt:str,**kwargs:Any)->Optional[str]: return None
+def musicgen_local(prompt:str,**kwargs:Any)->Optional[str]: return None
+def huggingface_musicgen(prompt:str,**kwargs:Any)->Optional[str]:
+ if not HF_TOKEN:return None
+ with httpx.Client(timeout=300,follow_redirects=True) as c:
+  r=c.post(f"https://api-inference.huggingface.co/models/{HF_MUSIC_MODEL}",headers={"Authorization":f"Bearer {HF_TOKEN}"},json={"inputs":prompt}); r.raise_for_status(); return _save(r.content,".wav")
+TTS_PROVIDERS={"elevenlabs_tts":elevenlabs_tts,"huggingface_tts":huggingface_tts}
+MUSIC_PROVIDERS={"lyria_music":lyria_music,"huggingface_musicgen":huggingface_musicgen,"musicgen_local":musicgen_local}
