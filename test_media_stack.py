@@ -59,8 +59,10 @@ def main():
     )
 
     # Fail only when every provider in a category is genuinely exhausted.
-    if any(not r["ok"] and not r["skipped"] for r in results):
-        raise SystemExit(1)
+    # A media test is successful only when every requested category
+# actually produces a file.
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":
