@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from pathlib import Path
 
 from ai_router import generate
@@ -7,26 +8,21 @@ from content_planner import build_plan
 from content_generator import generate_content
 from review_agent import review_content
 from media_router import MediaRouter
+from media_assembler import assemble_video
 
 
 ROOT = Path(__file__).parent
 JOBS = ROOT / "jobs"
 OUT = ROOT / "outputs"
-
 JOBS.mkdir(exist_ok=True)
 OUT.mkdir(exist_ok=True)
 
 MEDIA_ROUTER = MediaRouter()
-
 MAX_REVIEW_ROUNDS = 3
 
 
 def safe_id(job):
-    return re.sub(
-        r"[^a-zA-Z0-9_-]+",
-        "_",
-        str(job.get("id", "job")),
-    )[:80]
+    return re.sub(r"[^a-zA-Z0-9_-]+", "_", str(job.get("id", "job")))[:80]
 
 
 def media_result_dict(result):
@@ -41,211 +37,7 @@ def media_result_dict(result):
     }
 
 
-def generate_cover_image(job, job_id, prompt=None):
-    """Best-effort cover image generation."""
-    if prompt is None:
-        brief = job.get("brief", "").strip()
-        if not brief:
-            return None
-
-        prompt = (
-            "A clean, professional Instagram cover image "
-            "representing this business/content brief: "
-            f"{brief}. Minimal, modern, professional composition, "
-            "no text overlay."
-        )
-
-    try:
-        result = MEDIA_ROUTER.generate_image(prompt=prompt)
-    except Exception as exc:
-        print(
-            f"[Media][Image] error: "
-            f"{type(exc).__name__}: {exc}"
-        )
-        return None
-
-    if result.ok and result.output_path:
-        return result.output_path
-
-    print(f"[Media][Image] skipped: {result.error}")
-    return None
-
-
-def run_media_test(job, job_id):
-    """Run the optional full media test: image, video, TTS, music."""
-    config = job.get("media_test")
-
-    if not isinstance(config, dict):
-        return None
-
-    if not config.get("enabled", False):
-        return None
-
-    print("=" * 60)
-    print(f"[MediaTest] Starting full media test: {job_id}")
-    print("=" * 60)
-
-    results = {
-        "enabled": True,
-        "image": None,
-        "video": None,
-        "tts": None,
-        "music": None,
-        "provider_stats_before": MEDIA_ROUTER.provider_stats(),
-    }
-
-    image_prompt = config.get("image", {}).get("prompt")
-    if image_prompt:
-        print("[MediaTest][Image] generating...")
-        try:
-            result = MEDIA_ROUTER.generate_image(
-                prompt=image_prompt
-            )
-            results["image"] = media_result_dict(result)
-            if result.ok:
-                print(
-                    f"[MediaTest][Image] SUCCESS -> "
-                    f"{result.output_path}"
-                )
-            else:
-                print(
-                    f"[MediaTest][Image] FAILED/SKIPPED -> "
-                    f"{result.error}"
-                )
-        except Exception as exc:
-            results["image"] = {
-                "ok": False,
-                "provider": "none",
-                "output": None,
-                "error": f"{type(exc).__name__}: {exc}",
-                "skipped": True,
-            }
-            print(f"[MediaTest][Image] ERROR -> {exc}")
-
-    video_prompt = config.get("video", {}).get("prompt")
-    if video_prompt:
-        print("[MediaTest][Video] generating...")
-        try:
-            result = MEDIA_ROUTER.generate_video(
-                prompt=video_prompt
-            )
-            results["video"] = media_result_dict(result)
-            if result.ok:
-                print(
-                    f"[MediaTest][Video] SUCCESS -> "
-                    f"{result.output_path}"
-                )
-            else:
-                print(
-                    f"[MediaTest][Video] FAILED/SKIPPED -> "
-                    f"{result.error}"
-                )
-        except Exception as exc:
-            results["video"] = {
-                "ok": False,
-                "provider": "none",
-                "output": None,
-                "error": f"{type(exc).__name__}: {exc}",
-                "skipped": True,
-            }
-            print(f"[MediaTest][Video] ERROR -> {exc}")
-
-    tts_text = config.get("tts", {}).get("text")
-    if tts_text:
-        print("[MediaTest][TTS] generating...")
-        try:
-            result = MEDIA_ROUTER.generate_tts(text=tts_text)
-            results["tts"] = media_result_dict(result)
-            if result.ok:
-                print(
-                    f"[MediaTest][TTS] SUCCESS -> "
-                    f"{result.output_path}"
-                )
-            else:
-                print(
-                    f"[MediaTest][TTS] FAILED/SKIPPED -> "
-                    f"{result.error}"
-                )
-        except Exception as exc:
-            results["tts"] = {
-                "ok": False,
-                "provider": "none",
-                "output": None,
-                "error": f"{type(exc).__name__}: {exc}",
-                "skipped": True,
-            }
-            print(f"[MediaTest][TTS] ERROR -> {exc}")
-
-    music_prompt = config.get("music", {}).get("prompt")
-    if music_prompt:
-        print("[MediaTest][Music] generating...")
-        try:
-            result = MEDIA_ROUTER.generate_music(
-                prompt=music_prompt
-            )
-            results["music"] = media_result_dict(result)
-            if result.ok:
-                print(
-                    f"[MediaTest][Music] SUCCESS -> "
-                    f"{result.output_path}"
-                )
-            else:
-                print(
-                    f"[MediaTest][Music] FAILED/SKIPPED -> "
-                    f"{result.error}"
-                )
-        except Exception as exc:
-            results["music"] = {
-                "ok": False,
-                "provider": "none",
-                "output": None,
-                "error": f"{type(exc).__name__}: {exc}",
-                "skipped": True,
-            }
-            print(f"[MediaTest][Music] ERROR -> {exc}")
-
-    successful = sum(
-        1
-        for key in ("image", "video", "tts", "music")
-        if (
-            isinstance(results.get(key), dict)
-            and results[key].get("ok")
-        )
-    )
-
-    requested = [
-        key for key in ("image", "video", "tts", "music")
-        if isinstance(config.get(key), dict)
-        and any(
-            value
-            for value in config.get(key, {}).values()
-            if isinstance(value, str) and value.strip()
-        )
-    ]
-
-    results["successful_count"] = successful
-    results["requested_count"] = len(requested)
-    results["all_requested_succeeded"] = (
-        bool(requested)
-        and successful == len(requested)
-    )
-    results["provider_stats_after"] = MEDIA_ROUTER.provider_stats()
-    results["total_tests"] = len(requested)
-
-    print("=" * 60)
-    print(
-        "[MediaTest] Finished: "
-        f"{successful}/4 media types succeeded."
-    )
-    print("=" * 60)
-
-    return results
-
-
 def revise_content(job, plan, current_content, review):
-    """Revise content using Review Agent feedback."""
-    brief = job.get("brief", "").strip()
-
     context = {
         "platform": job.get("platform", ""),
         "language": job.get("language", ""),
@@ -257,422 +49,315 @@ def revise_content(job, plan, current_content, review):
         "constraints": job.get("constraints", []),
         "deliverables": job.get("deliverables", []),
     }
-
     prompt = f"""
 You are the Revision Agent for Aria Freelancer.
-
-Your job is to revise an existing generated content package
-so that it fully satisfies the client brief and approved
-Content Plan.
-
-Do NOT create a new strategy.
-Do NOT ignore the approved plan.
-Do NOT provide a partial patch.
-
-Return the COMPLETE revised content package.
+Return the COMPLETE revised content package, not a patch.
 
 CLIENT BRIEF:
-{brief}
+{job.get("brief", "")}
 
-CONTENT CONTEXT:
+CONTEXT:
 {json.dumps(context, ensure_ascii=False, indent=2)}
 
-APPROVED CONTENT PLAN:
+APPROVED PLAN:
 {json.dumps(plan, ensure_ascii=False, indent=2)}
 
-CURRENT GENERATED CONTENT:
+CURRENT CONTENT:
 {current_content}
 
-REVIEW AGENT FEEDBACK:
+REVIEW:
 {json.dumps(review, ensure_ascii=False, indent=2)}
 
-REVISION RULES:
-1. Fix every critical and major issue.
-2. Complete every missing deliverable.
-3. Preserve the approved Content Plan.
-4. Preserve useful parts of the current content.
-5. Do not remove completed deliverables.
-6. Return the FULL content package.
-7. Match platform, language, audience and tone.
-8. Never invent statistics, sources or factual claims.
-9. For psychology/health content, avoid diagnosis,
-   treatment promises and unsupported medical claims.
-10. Remove placeholder text and broken formatting.
-11. Make the result directly usable by the client.
-12. Organize with Markdown headings.
-13. Return ONLY the complete revised content package.
-
-Produce the complete revised package now.
+Rules:
+- Fix every critical and major issue.
+- Complete every missing deliverable.
+- Preserve the approved strategy.
+- Match platform, language, audience and tone.
+- Never invent statistics, sources or facts.
+- For psychology/health content, avoid diagnosis and treatment promises.
+- Return only the complete final package in Markdown.
 """
-
     revised = generate(prompt).strip()
-
     if not revised:
         raise ValueError("Revision Agent returned empty content.")
-
     return revised
 
 
-def process(job_file):
-    job = json.loads(
-        job_file.read_text(encoding="utf-8")
+def build_media_plan(job, plan, content):
+    prompt = f"""
+You are Aria's Media Director.
+
+Create a production-ready JSON specification for a short social-media
+video based ONLY on the approved plan and final content below.
+
+The video should be cinematic, coherent and actually producible.
+Prefer 6-8 scenes. Total duration: 45-60 seconds.
+
+Return ONLY valid JSON:
+{{
+  "title": "...",
+  "aspect_ratio": "9:16",
+  "duration_seconds": 50,
+  "visual_style": "...",
+  "music_prompt": "...",
+  "scenes": [
+    {{
+      "duration": 6,
+      "visual_prompt": "...",
+      "on_screen_text": "...",
+      "narration": "..."
+    }}
+  ]
+}}
+
+Requirements:
+- Persian narration and Persian on-screen text.
+- Visual prompts must be in English and describe concrete cinematic shots.
+- Show the concept of perfectionism visually: impossible standards,
+  repeated corrections, mirrors/reflections, unfinished work, avoidance.
+- Do not diagnose or promise treatment.
+- Music prompt should request original instrumental suspense music,
+  dark/cinematic, no vocals, suitable as background.
+- Keep on-screen text short.
+- The narration must fit the scene duration.
+
+APPROVED PLAN:
+{json.dumps(plan, ensure_ascii=False, indent=2)}
+
+FINAL CONTENT:
+{content}
+"""
+    raw = generate(prompt).strip()
+    match = re.search(r"\{.*\}", raw, flags=re.S)
+    if not match:
+        raise ValueError("Media Director did not return JSON.")
+    spec = json.loads(match.group(0))
+    if not isinstance(spec.get("scenes"), list) or not spec["scenes"]:
+        raise ValueError("Media plan contains no scenes.")
+    return spec
+
+
+def produce_media(job, job_id, plan, content):
+    media_dir = OUT / "media" / job_id
+    media_dir.mkdir(parents=True, exist_ok=True)
+
+    spec = build_media_plan(job, plan, content)
+    scene_assets = []
+    failures = []
+
+    for index, scene in enumerate(spec["scenes"], start=1):
+        duration = float(scene.get("duration", 6))
+        visual_prompt = str(scene.get("visual_prompt", "")).strip()
+        narration = str(scene.get("narration", "")).strip()
+
+        print(f"[Media] Scene {index}: video generation")
+        video = MEDIA_ROUTER.generate_video(
+            prompt=visual_prompt,
+            duration=max(4, min(int(round(duration)), 10)),
+            aspect_ratio="9:16",
+        )
+
+        image_path = None
+        if not video.ok:
+            print(f"[Media] Scene {index}: video unavailable -> image fallback")
+            image = MEDIA_ROUTER.generate_image(
+                prompt=visual_prompt,
+                aspect_ratio="9:16",
+            )
+            if image.ok and image.output_path:
+                image_path = image.output_path
+            else:
+                failures.append({
+                    "scene": index,
+                    "type": "visual",
+                    "error": image.error or video.error,
+                })
+                continue
+
+        voice_path = None
+        if narration:
+            print(f"[Media] Scene {index}: TTS")
+            tts = MEDIA_ROUTER.generate_tts(text=narration)
+            if tts.ok:
+                voice_path = tts.output_path
+            else:
+                print(f"[Media] Scene {index}: TTS skipped -> {tts.error}")
+
+        scene_assets.append({
+            "index": index,
+            "duration": duration,
+            "video": video.output_path if video.ok else None,
+            "image": image_path,
+            "voice": voice_path,
+            "text": scene.get("on_screen_text", ""),
+        })
+
+    if not scene_assets:
+        raise RuntimeError("No visual scene was generated.")
+
+    print("[Media] Generating background music")
+    music = MEDIA_ROUTER.generate_music(
+        prompt=spec.get(
+            "music_prompt",
+            "dark cinematic suspense instrumental background music, no vocals"
+        )
+    )
+    music_path = music.output_path if music.ok else None
+    if not music.ok:
+        print(f"[Media] Music unavailable: {music.error}")
+
+    final_path = media_dir / f"{job_id}.mp4"
+    assemble_video(
+        scene_assets=scene_assets,
+        music_path=music_path,
+        output_path=final_path,
+        aspect_ratio="9:16",
     )
 
-    brief = job.get("brief", "").strip()
+    manifest = {
+        "job_id": job_id,
+        "media_plan": spec,
+        "scene_assets": scene_assets,
+        "music": media_result_dict(music),
+        "final_video": str(final_path.relative_to(ROOT)),
+        "failures": failures,
+    }
+    manifest_path = media_dir / "media-manifest.json"
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return final_path, manifest
 
+
+def process(job_file):
+    job = json.loads(job_file.read_text(encoding="utf-8"))
+    if job.get("status") == "completed":
+        print(f"Skipping finalized job: {job_file.name}")
+        return None
+
+    brief = job.get("brief", "").strip()
     if not brief:
         raise ValueError("Job must contain a non-empty brief.")
 
-    deliverables = job.get(
-        "deliverables",
-        [
-            "10 social-media post ideas with hooks",
-            "10 ready-to-publish captions",
-            "7-day content calendar",
-        ],
-    )
-
-    job["deliverables"] = deliverables
+    job["deliverables"] = job.get("deliverables") or [
+        "Complete social media content package"
+    ]
     job_id = safe_id(job)
 
-    media_only = bool(job.get("media_only", False))
-    media_enabled = (
-        isinstance(job.get("media_test"), dict)
-        and job["media_test"].get("enabled", False)
-    )
-
-    if media_only and media_enabled:
-        print(
-            f"[MediaOnly] Running media test "
-            f"for {job_file.name}"
-        )
-
-        media_results = run_media_test(
-            job=job,
-            job_id=job_id,
-        )
-
-        output_file = OUT / f"{job_id}.md"
-
-        output_parts = [
-            "# Aria Media Stack Test\n\n",
-            "```json\n",
-            json.dumps(
-                media_results,
-                ensure_ascii=False,
-                indent=2,
-            ),
-            "\n```\n",
-        ]
-
-        output_file.write_text(
-            "".join(output_parts),
-            encoding="utf-8",
-        )
-
-        job["status"] = (
-            "completed"
-            if (
-                media_results
-                and media_results.get("all_requested_succeeded", False)
-            )
-            else "needs_manual_review"
-        )
-
-        job["output"] = str(
-            output_file.relative_to(ROOT)
-        )
-        job["media_results"] = media_results
-
-        job_file.write_text(
-            json.dumps(
-                job,
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-
-        return output_file
-
-    print(
-        f"[Planner] Building content plan "
-        f"for {job_file.name}"
-    )
+    print(f"[Planner] Building content plan for {job_file.name}")
     plan = build_plan(job)
 
-    print(
-        f"[Generator] Generating content "
-        f"for {job_file.name}"
-    )
+    print(f"[Generator] Generating content for {job_file.name}")
     result = generate_content(job, plan)
 
     review_history = []
-    revision_count = 0
     final_review = None
-    manual_review_required = False
-    review_error = None
+    manual_review = False
 
     for round_number in range(1, MAX_REVIEW_ROUNDS + 1):
-        print(
-            "[Review] Starting review round "
-            f"{round_number}/{MAX_REVIEW_ROUNDS}"
-        )
-
+        print(f"[Review] Starting review round {round_number}/{MAX_REVIEW_ROUNDS}")
         try:
-            review = review_content(
-                job=job,
-                plan=plan,
-                content=result,
-            )
+            review = review_content(job=job, plan=plan, content=result)
         except Exception as exc:
-            review_error = (
-                f"{type(exc).__name__}: {exc}"
-            )
-
-            print(
-                f"[Review] Review Agent failed: "
-                f"{review_error}"
-            )
-
-            manual_review_required = True
-
-            review = {
-                "round": round_number,
-                "status": "manual_review",
-                "score": None,
-                "issues": [
-                    {
-                        "severity": "critical",
-                        "category": "review_agent_failure",
-                        "description": review_error,
-                    }
-                ],
-                "missing_deliverables": [],
-                "revision_instructions": [],
-                "reviewer": "aria-review-agent-v1",
-            }
-
-            review_history.append(review)
-            final_review = review
+            print(f"[Review] failed: {type(exc).__name__}: {exc}")
+            manual_review = True
             break
 
         review["round"] = round_number
         review_history.append(review)
         final_review = review
-
         print(
             f"[Review] Round {round_number}: "
-            f"status={review.get('status')} "
-            f"score={review.get('score')}"
+            f"status={review.get('status')} score={review.get('score')}"
         )
 
         if review.get("status") == "approved":
-            print(
-                "[Review] Content approved "
-                f"on round {round_number}"
-            )
+            print(f"[Review] Content approved on round {round_number}")
             break
 
-        if review.get("status") == "needs_revision":
-            if round_number < MAX_REVIEW_ROUNDS:
-                revision_count += 1
+        if review.get("status") == "needs_revision" and round_number < MAX_REVIEW_ROUNDS:
+            print(f"[Revision] Revising content (revision {round_number})")
+            result = revise_content(job, plan, result, review)
+        else:
+            manual_review = True
+            break
 
-                print(
-                    "[Revision] Revising content "
-                    f"(revision {revision_count})"
-                )
+    if manual_review or not final_review or final_review.get("status") != "approved":
+        job["status"] = "needs_manual_review"
+        job["review_history"] = review_history
+        job_file.write_text(
+            json.dumps(job, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        raise RuntimeError("Content did not reach an approved review state.")
 
-                try:
-                    result = revise_content(
-                        job=job,
-                        plan=plan,
-                        current_content=result,
-                        review=review,
-                    )
-                except Exception as exc:
-                    review_error = (
-                        f"{type(exc).__name__}: {exc}"
-                    )
-
-                    print(
-                        "[Revision] Revision Agent failed: "
-                        f"{review_error}"
-                    )
-
-                    manual_review_required = True
-
-                    review_history.append(
-                        {
-                            "round": round_number,
-                            "status": "manual_review",
-                            "score": None,
-                            "issues": [
-                                {
-                                    "severity": "critical",
-                                    "category": (
-                                        "revision_agent_failure"
-                                    ),
-                                    "description": review_error,
-                                }
-                            ],
-                            "missing_deliverables": [],
-                            "revision_instructions": [],
-                            "reviewer": (
-                                "aria-revision-agent-v1"
-                            ),
-                        }
-                    )
-
-                    break
-            else:
-                print(
-                    "[Review] Maximum review rounds reached. "
-                    "Manual review required."
-                )
-                manual_review_required = True
-                break
-
-    media_results = run_media_test(
+    print("[Media] Content approved. Starting actual media production.")
+    final_video, media_manifest = produce_media(
         job=job,
         job_id=job_id,
+        plan=plan,
+        content=result,
     )
-
-    cover_image_path = None
-
-    if not media_enabled:
-        cover_image_path = generate_cover_image(
-            job,
-            job_id,
-        )
 
     output_file = OUT / f"{job_id}.md"
-    output_parts = []
-
-    if media_results is not None:
-        output_parts.append(
-            "# Media Test Results\n\n"
-        )
-        output_parts.append("```json\n")
-        output_parts.append(
-            json.dumps(
-                media_results,
-                ensure_ascii=False,
-                indent=2,
-            )
-        )
-        output_parts.append("\n```\n\n")
-
-    if cover_image_path:
-        output_parts.append(
-            f"![cover]({cover_image_path})\n\n"
-        )
-
-    output_parts.append("# Content Plan\n\n")
-    output_parts.append(
-        json.dumps(
-            plan,
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
-    output_parts.append("\n\n")
-
-    output_parts.append("# Review History\n\n")
-    output_parts.append("```json\n")
-    output_parts.append(
-        json.dumps(
-            review_history,
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
-    output_parts.append("\n```\n\n")
-
-    final_status = (
-        "completed"
-        if (
-            final_review
-            and final_review.get("status") == "approved"
-            and not manual_review_required
-        )
-        else "needs_manual_review"
-    )
-
-    output_parts.append("# Final Status\n\n")
-    output_parts.append(
-        f"**{final_status}**\n\n"
-    )
-
-    output_parts.append("# Final Content\n\n")
-    output_parts.append(result)
-    output_parts.append("\n")
-
     output_file.write_text(
-        "".join(output_parts),
+        "\n".join([
+            f"# {job.get('id', job_id)}",
+            "",
+            "## Content Plan",
+            "",
+            "```json",
+            json.dumps(plan, ensure_ascii=False, indent=2),
+            "```",
+            "",
+            "## Final Content",
+            "",
+            result,
+            "",
+            "## Review History",
+            "",
+            "```json",
+            json.dumps(review_history, ensure_ascii=False, indent=2),
+            "```",
+            "",
+            "## Final Video",
+            "",
+            f"`{final_video.relative_to(ROOT)}`",
+            "",
+            "## Media Manifest",
+            "",
+            "```json",
+            json.dumps(media_manifest, ensure_ascii=False, indent=2),
+            "```",
+            "",
+        ]),
         encoding="utf-8",
     )
 
-    job["status"] = final_status
-    job["output"] = str(
-        output_file.relative_to(ROOT)
-    )
+    job["status"] = "completed"
     job["content_plan"] = plan
-    job["review"] = final_review
     job["review_history"] = review_history
-    job["review_rounds"] = len(review_history)
-    job["revision_count"] = revision_count
-    job["cover_image"] = (
-        str(cover_image_path)
-        if cover_image_path
-        else None
+    job["final_video"] = str(final_video.relative_to(ROOT))
+    job["media_manifest"] = str(
+        (OUT / "media" / job_id / "media-manifest.json").relative_to(ROOT)
     )
-    job["media_results"] = media_results
-    job["provider_stats"] = MEDIA_ROUTER.provider_stats()
-    job["final_review_status"] = (
-        final_review.get("status")
-        if final_review
-        else "unknown"
-    )
+    job["output"] = str(output_file.relative_to(ROOT))
 
     job_file.write_text(
-        json.dumps(
-            job,
-            ensure_ascii=False,
-            indent=2,
-        ),
+        json.dumps(job, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
+    print(f"SUCCESS {job_file.name} -> {output_file}")
+    print(f"[Media] FINAL VIDEO -> {final_video}")
     return output_file
 
 
 def main():
     for job_file in sorted(JOBS.glob("*.json")):
         try:
-            job = json.loads(
-                job_file.read_text(
-                    encoding="utf-8"
-                )
-            )
-
-            if job.get("status") in {
-                "completed",
-                "needs_manual_review",
-            }:
-                print(
-                    "Skipping finalized job: "
-                    f"{job_file.name}"
-                )
-                continue
-
-            output = process(job_file)
-
-            print(
-                f"SUCCESS {job_file.name} "
-                f"-> {output}"
-            )
-
+            process(job_file)
         except Exception as exc:
             print(
                 f"FAILED {job_file.name}: "
