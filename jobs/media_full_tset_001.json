@@ -1,0 +1,37 @@
+{
+  "id": "media-full-test-001",
+  "status": "pending",
+  "brief": "تست کامل Media Stack آریا. برای یک محتوای آزمایشی اینستاگرامی درباره آرامش ذهنی، یک تصویر، یک ویدیوی کوتاه، یک فایل گویندگی فارسی و یک موسیقی بی‌کلام تولید کن.",
+  "platform": "Instagram",
+  "language": "Persian",
+  "audience": "عمومی",
+  "tone": "آرام و حرفه‌ای",
+  "goal": "تست تولید مدیا",
+  "content_type": "media generation test",
+  "brand_voice": "ساده و حرفه‌ای",
+  "constraints": [
+    "بدون ادعاهای پزشکی",
+    "بدون آمار یا منبع ساختگی"
+  ],
+  "deliverables": [
+    "یک تصویر کاور",
+    "یک ویدیوی کوتاه",
+    "یک متن کوتاه برای گویندگی فارسی",
+    "یک موسیقی بی‌کلام کوتاه"
+  ],
+  "media_test": {
+    "enabled": true,
+    "image": {
+      "prompt": "A calm professional Instagram visual about mental relaxation, soft natural light, peaceful workspace, modern minimal composition, no text"
+    },
+    "video": {
+      "prompt": "A short cinematic vertical video showing a calm person taking a break in a peaceful modern workspace, soft natural light, relaxing atmosphere"
+    },
+    "tts": {
+      "text": "گاهی بهترین کاری که می‌توانیم برای ذهنمان انجام دهیم، چند دقیقه مکث کردن و فاصله گرفتن از فشار روزمره است."
+    },
+    "music": {
+      "prompt": "Short calm instrumental background music for a relaxing personal-growth Instagram video, soft piano and ambient atmosphere, no vocals"
+    }
+  }
+}
