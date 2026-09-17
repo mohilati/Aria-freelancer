@@ -7,11 +7,13 @@ import requests
 from huggingface_hub import InferenceClient
 
 
-OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test"))
+OUTPUT_DIR = Path(
+    os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test")
+)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _save_video(data: bytes, prefix: str = "video") -> str:
+def _save_video(data: bytes, prefix: str) -> str:
     if not data:
         raise RuntimeError("Video provider returned empty data")
 
@@ -20,7 +22,7 @@ def _save_video(data: bytes, prefix: str = "video") -> str:
 
     path.write_bytes(data)
 
-    if path.stat().st_size == 0:
+    if not path.exists() or path.stat().st_size == 0:
         raise RuntimeError("Video file was created but is empty")
 
     return str(path)
@@ -32,10 +34,10 @@ def huggingface_video(
     **kwargs,
 ) -> str:
     """
-    Generate text-to-video through Hugging Face Inference Providers.
+    Generate a video using Hugging Face Inference Providers.
 
-    InferenceClient.text_to_video() returns raw video bytes,
-    so there is no {"video": ...} response object to parse.
+    text_to_video() returns raw video bytes.
+    It does NOT return {"video": {...}}.
     """
 
     token = (
@@ -53,7 +55,7 @@ def huggingface_video(
     )
 
     client = InferenceClient(
-        provider="fal-ai",
+        provider="hf-inference",
         api_key=token,
     )
 
@@ -71,8 +73,6 @@ def huggingface_video(
 
     negative_prompt = kwargs.get("negative_prompt")
     if negative_prompt:
-        if isinstance(negative_prompt, str):
-            negative_prompt = [negative_prompt]
         params["negative_prompt"] = negative_prompt
 
     video_bytes = client.text_to_video(
@@ -80,6 +80,12 @@ def huggingface_video(
         model=model,
         **params,
     )
+
+    if not isinstance(video_bytes, bytes):
+        raise RuntimeError(
+            f"Unexpected Hugging Face video response type: "
+            f"{type(video_bytes).__name__}"
+        )
 
     return _save_video(video_bytes, "hf-video")
 
@@ -91,9 +97,6 @@ def replicate_video(
 ) -> Optional[str]:
     """
     Replicate fallback.
-
-    This remains intentionally conservative: if no Replicate model
-    is configured, return no output so MediaRouter can continue.
     """
 
     token = os.getenv("REPLICATE_API_TOKEN")
@@ -102,62 +105,67 @@ def replicate_video(
     if not token or not model:
         return None
 
-    try:
-        response = requests.post(
-            "https://api.replicate.com/v1/predictions",
+    response = requests.post(
+        "https://api.replicate.com/v1/predictions",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "version": model,
+            "input": {
+                "prompt": prompt,
+            },
+        },
+        timeout=60,
+    )
+
+    response.raise_for_status()
+    prediction = response.json()
+
+    for _ in range(60):
+        status_url = prediction.get("urls", {}).get("get")
+
+        if not status_url:
+            return None
+
+        status_response = requests.get(
+            status_url,
             headers={
                 "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
             },
-            json={
-                "version": model,
-                "input": {
-                    "prompt": prompt,
-                },
-            },
-            timeout=60,
+            timeout=30,
         )
-        response.raise_for_status()
 
-        prediction = response.json()
+        status_response.raise_for_status()
+        data = status_response.json()
 
-        for _ in range(60):
-            status_url = prediction.get("urls", {}).get("get")
+        status = data.get("status")
 
-            if not status_url:
+        if status == "succeeded":
+            output = data.get("output")
+
+            if isinstance(output, list):
+                output = output[0] if output else None
+
+            if not output:
                 return None
 
-            status_response = requests.get(
-                status_url,
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=30,
+            video_response = requests.get(
+                output,
+                timeout=180,
             )
-            status_response.raise_for_status()
+            video_response.raise_for_status()
 
-            data = status_response.json()
-            status = data.get("status")
+            return _save_video(
+                video_response.content,
+                "replicate-video",
+            )
 
-            if status == "succeeded":
-                output = data.get("output")
+        if status in {"failed", "canceled"}:
+            return None
 
-                if isinstance(output, list):
-                    output = output[0] if output else None
-
-                if not output:
-                    return None
-
-                video_response = requests.get(output, timeout=120)
-                video_response.raise_for_status()
-
-                return _save_video(video_response.content, "replicate-video")
-
-            if status in {"failed", "canceled"}:
-                return None
-
-            time.sleep(5)
-
-    except Exception:
-        return None
+        time.sleep(5)
 
     return None
 
@@ -169,8 +177,6 @@ def fal_video(
 ) -> Optional[str]:
     """
     Direct fal.ai provider.
-
-    Requires FAL_KEY and fal-client.
     """
 
     key = os.getenv("FAL_KEY")
@@ -203,24 +209,40 @@ def fal_video(
         arguments=arguments,
     )
 
-    video = result.get("video") if isinstance(result, dict) else None
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            f"Unexpected FAL response type: "
+            f"{type(result).__name__}"
+        )
+
+    video = result.get("video")
 
     if isinstance(video, dict):
         video_url = video.get("url")
-    else:
+    elif isinstance(video, str):
         video_url = video
+    else:
+        video_url = None
 
     if not video_url:
-        return None
+        raise RuntimeError(
+            "FAL returned no video URL"
+        )
 
-    response = requests.get(video_url, timeout=180)
+    response = requests.get(
+        video_url,
+        timeout=180,
+    )
     response.raise_for_status()
 
-    return _save_video(response.content, "fal-video")
+    return _save_video(
+        response.content,
+        "fal-video",
+    )
 
 
 VIDEO_PROVIDERS = {
     "fal_video": fal_video,
     "replicate_video": replicate_video,
     "huggingface_video": huggingface_video,
-}
+    }
