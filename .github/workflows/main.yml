@@ -12,7 +12,7 @@ permissions:
 jobs:
   process:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -23,6 +23,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install system media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -30,7 +35,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.6-flash
-          GEMINI_FALLBACK_MODEL: gemini-2.5-flash-lite
+          GEMINI_FALLBACK_MODEL: gemini-3.5-flash-lite
 
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: openrouter/free
@@ -45,10 +50,7 @@ jobs:
           PIXAZO_API_KEY: ${{ secrets.PIXAZO_API_KEY }}
           SUNO_API_KEY: ${{ secrets.SUNO_API_KEY }}
           JSON2VIDEO_API_KEY: ${{ secrets.JSON2VIDEO_API_KEY }}
-
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_TOKEN_1: ${{ secrets.HF_TOKEN_1 }}
-          HUGGINGFACEHUB_API_TOKEN: ${{ secrets.HUGGINGFACEHUB_API_TOKEN }}
           FAL_KEY: ${{ secrets.FAL_KEY }}
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
@@ -60,45 +62,20 @@ jobs:
           HF_TTS_MODEL: hexgrad/Kokoro-82M
           HF_TTS_PROVIDER: replicate
           HF_TTS_VOICE: af_nicole
-          HF_MUSIC_MODEL: m-a-p/YuE-s1-7B-anneal-en-cot
-          HF_MUSIC_PROVIDER: fal-ai
 
-          REPLICATE_IMAGE_MODEL: ${{ vars.REPLICATE_IMAGE_MODEL }}
-          REPLICATE_VIDEO_MODEL: ${{ vars.REPLICATE_VIDEO_MODEL }}
-
-          KREA_IMAGE_ENDPOINT: ${{ vars.KREA_IMAGE_ENDPOINT }}
-          KREA_VIDEO_ENDPOINT: ${{ vars.KREA_VIDEO_ENDPOINT }}
-
-          KIE_IMAGE_ENDPOINT: ${{ vars.KIE_IMAGE_ENDPOINT }}
-          KIE_IMAGE_STATUS_ENDPOINT: ${{ vars.KIE_IMAGE_STATUS_ENDPOINT }}
-          KIE_VIDEO_ENDPOINT: ${{ vars.KIE_VIDEO_ENDPOINT }}
-          KIE_VIDEO_STATUS_ENDPOINT: ${{ vars.KIE_VIDEO_STATUS_ENDPOINT }}
-          KIE_AUDIO_ENDPOINT: ${{ vars.KIE_AUDIO_ENDPOINT }}
-          KIE_AUDIO_STATUS_ENDPOINT: ${{ vars.KIE_AUDIO_STATUS_ENDPOINT }}
-
-          PIXAZO_IMAGE_ENDPOINT: ${{ vars.PIXAZO_IMAGE_ENDPOINT }}
-          PIXAZO_IMAGE_STATUS_ENDPOINT: ${{ vars.PIXAZO_IMAGE_STATUS_ENDPOINT }}
-          PIXAZO_VIDEO_ENDPOINT: ${{ vars.PIXAZO_VIDEO_ENDPOINT }}
-          PIXAZO_VIDEO_STATUS_ENDPOINT: ${{ vars.PIXAZO_VIDEO_STATUS_ENDPOINT }}
-
-          SUNO_API_BASE_URL: ${{ vars.SUNO_API_BASE_URL }}
-          SUNO_GENERATE_ENDPOINT: ${{ vars.SUNO_GENERATE_ENDPOINT }}
-          SUNO_STATUS_ENDPOINT: ${{ vars.SUNO_STATUS_ENDPOINT }}
-
-          JSON2VIDEO_BASE_URL: ${{ vars.JSON2VIDEO_BASE_URL }}
+          SUNO_API_BASE_URL: https://api.sunoapi.org
 
           ARIA_IMAGE_CHAIN: pollinations_image,krea_image,kie_image,pixazo_image,huggingface_image,fal_image,replicate_image
-          ARIA_VIDEO_CHAIN: krea_video,kie_video,pixazo_video,huggingface_video,fal_video,replicate_video
-          ARIA_TTS_CHAIN: elevenlabs_tts,pollinations_tts,huggingface_tts
-          ARIA_MUSIC_CHAIN: suno_music,kie_music,pollinations_audio,huggingface_musicgen,fal_music
-          ARIA_COMPOSITION_CHAIN: json2video_render
+          ARIA_VIDEO_CHAIN: pollinations_video,krea_video,kie_video,pixazo_video,huggingface_video,fal_video,replicate_video
+          ARIA_TTS_CHAIN: elevenlabs_tts,huggingface_tts
+          ARIA_MUSIC_CHAIN: suno_music,kie_music,pollinations_audio,fal_music
 
           ARIA_OUTPUT_DIR: outputs
           ARIA_PROVIDER_STATE: outputs/.aria_provider_usage.json
 
         run: python agent.py
 
-      - name: Save completed jobs
+      - name: Save completed jobs and media
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -106,6 +83,6 @@ jobs:
           git add jobs outputs
 
           if ! git diff --cached --quiet; then
-            git commit -m "feat: rotate AI media providers"
+            git commit -m "feat: generate approved media jobs"
             git push
           fi
