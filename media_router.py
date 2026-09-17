@@ -42,30 +42,18 @@ class MediaRouter:
 
     def _run(self, names, registry, kind, **kwargs) -> ProviderResult:
         errors = []
-
         for name in names:
             fn = registry.get(name)
-
             if fn is None:
                 errors.append(f"{name}: not registered")
                 continue
-
             try:
                 result = fn(**kwargs)
-
                 if result:
-                    return ProviderResult(
-                        True,
-                        name,
-                        output_path=result,
-                    )
-
+                    return ProviderResult(True, name, output_path=result)
                 errors.append(f"{name}: no output")
-
             except Exception as exc:
-                errors.append(
-                    f"{name}: {type(exc).__name__}: {exc}"
-                )
+                errors.append(f"{name}: {type(exc).__name__}: {exc}")
 
         return ProviderResult(
             False,
@@ -75,40 +63,16 @@ class MediaRouter:
         )
 
     def generate_image(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(
-            self.image_chain,
-            IMAGE_PROVIDERS,
-            "image",
-            prompt=prompt,
-            **kwargs,
-        )
+        return self._run(self.image_chain, IMAGE_PROVIDERS, "image", prompt=prompt, **kwargs)
 
     def generate_video(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(
-            self.video_chain,
-            VIDEO_PROVIDERS,
-            "video",
-            prompt=prompt,
-            **kwargs,
-        )
+        return self._run(self.video_chain, VIDEO_PROVIDERS, "video", prompt=prompt, **kwargs)
 
     def generate_tts(self, text: str, **kwargs) -> ProviderResult:
-        return self._run(
-            self.tts_chain,
-            TTS_PROVIDERS,
-            "tts",
-            text=text,
-            **kwargs,
-        )
+        return self._run(self.tts_chain, TTS_PROVIDERS, "tts", text=text, **kwargs)
 
     def generate_music(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(
-            self.music_chain,
-            MUSIC_PROVIDERS,
-            "music",
-            prompt=prompt,
-            **kwargs,
-        )
+        return self._run(self.music_chain, MUSIC_PROVIDERS, "music", prompt=prompt, **kwargs)
 
     def generate_audio(self, kind: str, **kwargs) -> ProviderResult:
         if kind == "tts":

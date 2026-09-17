@@ -5,14 +5,14 @@ from typing import Optional
 import httpx
 
 try:
-    import fal_client
-except ImportError:
-    fal_client = None
-
-try:
     from huggingface_hub import InferenceClient
 except ImportError:
     InferenceClient = None
+
+try:
+    import fal_client
+except ImportError:
+    fal_client = None
 
 OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -26,46 +26,17 @@ def _hf_token() -> Optional[str]:
     )
 
 
-def _save_bytes(data: bytes, output_path: Path) -> str:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(data)
-    return str(output_path)
+def _save(data: bytes, path: Path) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return str(path)
 
 
-def _download(url: str, output_path: Path) -> str:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with httpx.Client(timeout=300.0, follow_redirects=True) as client:
-        response = client.get(url)
-        response.raise_for_status()
-        output_path.write_bytes(response.content)
-    return str(output_path)
-
-
-def fal_video(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
-    if fal_client is None:
-        raise RuntimeError("fal-client is not installed")
-    if not os.getenv("FAL_KEY"):
-        raise RuntimeError("FAL_KEY is not configured")
-
-    model = os.getenv("FAL_VIDEO_MODEL") or "fal-ai/wan/v2.7/text-to-video"
-    output = Path(output_path or OUTPUT_DIR / "video-fal.mp4")
-
-    result = fal_client.subscribe(
-        model,
-        arguments={"prompt": prompt},
-        with_logs=False,
-    )
-
-    if not isinstance(result, dict):
-        raise RuntimeError("FAL Video returned an invalid result")
-
-    video = result.get("video")
-    if isinstance(video, dict) and video.get("url"):
-        return _download(video["url"], output)
-    if isinstance(video, str):
-        return _download(video, output)
-
-    raise RuntimeError("FAL Video response did not contain a video URL")
+def _download(url: str, path: Path) -> str:
+    with httpx.Client(timeout=600, follow_redirects=True) as client:
+        r = client.get(url)
+        r.raise_for_status()
+        return _save(r.content, path)
 
 
 def huggingface_video(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
@@ -76,29 +47,52 @@ def huggingface_video(prompt: str, output_path: Optional[str] = None, **kwargs) 
     if not token:
         raise RuntimeError("HF token is not configured")
 
-    provider = os.getenv("HF_VIDEO_PROVIDER", "replicate")
-    model = os.getenv("HF_VIDEO_MODEL", "Wan-AI/Wan2.2-TI2V-5B")
+    # This model is documented by HF as supported through Replicate.
+    model = "Wan-AI/Wan2.2-TI2V-5B"
     output = Path(output_path or OUTPUT_DIR / "video-huggingface.mp4")
 
     client = InferenceClient(
-        provider=provider,
+        provider="replicate",
         api_key=token,
         timeout=600,
     )
 
-    video = client.text_to_video(
-        prompt,
-        model=model,
-    )
+    video = client.text_to_video(prompt, model=model)
 
     if isinstance(video, bytes):
-        return _save_bytes(video, output)
+        return _save(video, output)
+
     if isinstance(video, bytearray):
-        return _save_bytes(bytes(video), output)
+        return _save(bytes(video), output)
 
     raise RuntimeError(
-        f"Unsupported Hugging Face video response: {type(video).__name__}"
+        f"Unexpected HF video response: {type(video).__name__}"
     )
+
+
+def fal_video(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
+    if fal_client is None:
+        raise RuntimeError("fal-client is not installed")
+    if not os.getenv("FAL_KEY"):
+        raise RuntimeError("FAL_KEY is not configured")
+
+    model = "fal-ai/wan/v2.7/text-to-video"
+    output = Path(output_path or OUTPUT_DIR / "video-fal.mp4")
+
+    result = fal_client.subscribe(
+        model,
+        arguments={"prompt": prompt},
+        with_logs=False,
+    )
+
+    if isinstance(result, dict):
+        video = result.get("video")
+        if isinstance(video, dict) and video.get("url"):
+            return _download(video["url"], output)
+        if isinstance(video, str):
+            return _download(video, output)
+
+    raise RuntimeError("FAL Video response did not contain a video URL")
 
 
 def replicate_video(prompt: str, output_path: Optional[str] = None, **kwargs) -> Optional[str]:
@@ -111,35 +105,28 @@ def replicate_video(prompt: str, output_path: Optional[str] = None, **kwargs) ->
         raise RuntimeError("REPLICATE_VIDEO_MODEL is not configured")
 
     output = Path(output_path or OUTPUT_DIR / "video-replicate.mp4")
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    with httpx.Client(timeout=300.0, follow_redirects=True) as client:
-        response = client.post(
+    with httpx.Client(timeout=600, follow_redirects=True) as client:
+        r = client.post(
             f"https://api.replicate.com/v1/models/{model}/predictions",
             headers=headers,
             json={"input": {"prompt": prompt}},
         )
-        response.raise_for_status()
-        prediction = response.json()
-        prediction_url = prediction.get("urls", {}).get("get")
+        r.raise_for_status()
+        data = r.json()
+        poll_url = data.get("urls", {}).get("get")
 
-        if not prediction_url:
+        if not poll_url:
             raise RuntimeError("Replicate did not return prediction URL")
 
         import time
+        for _ in range(120):
+            status = client.get(poll_url, headers=headers)
+            status.raise_for_status()
+            data = status.json()
 
-        for _ in range(60):
-            data = client.get(
-                prediction_url,
-                headers=headers,
-            ).json()
-
-            status = data.get("status")
-
-            if status == "succeeded":
+            if data.get("status") == "succeeded":
                 result = data.get("output")
                 if isinstance(result, str):
                     return _download(result, output)
@@ -147,12 +134,10 @@ def replicate_video(prompt: str, output_path: Optional[str] = None, **kwargs) ->
                     for item in result:
                         if isinstance(item, str):
                             return _download(item, output)
-                raise RuntimeError("Replicate returned no usable video output")
+                raise RuntimeError("Replicate returned no usable video")
 
-            if status in ("failed", "canceled"):
-                raise RuntimeError(
-                    f"Replicate video failed: {data.get('error')}"
-                )
+            if data.get("status") in ("failed", "canceled"):
+                raise RuntimeError(f"Replicate video failed: {data.get('error')}")
 
             time.sleep(5)
 
