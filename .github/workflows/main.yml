@@ -12,7 +12,7 @@ permissions:
 jobs:
   process:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -38,6 +38,64 @@ jobs:
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           CEREBRAS_MODEL: gpt-oss-120b
 
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+          KREA_API_KEY: ${{ secrets.KREA_API_KEY }}
+          KIEAI_API_KEY: ${{ secrets.KIEAI_API_KEY }}
+          KIE_API_KEY: ${{ secrets.KIE_API_KEY }}
+          PIXAZO_API_KEY: ${{ secrets.PIXAZO_API_KEY }}
+          SUNO_API_KEY: ${{ secrets.SUNO_API_KEY }}
+          JSON2VIDEO_API_KEY: ${{ secrets.JSON2VIDEO_API_KEY }}
+
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_1: ${{ secrets.HF_TOKEN_1 }}
+          HUGGINGFACEHUB_API_TOKEN: ${{ secrets.HUGGINGFACEHUB_API_TOKEN }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+
+          HF_IMAGE_MODEL: black-forest-labs/FLUX.1-schnell
+          HF_IMAGE_PROVIDER: fal-ai
+          HF_VIDEO_MODEL: Wan-AI/Wan2.2-TI2V-5B
+          HF_VIDEO_PROVIDER: replicate
+          HF_TTS_MODEL: hexgrad/Kokoro-82M
+          HF_TTS_PROVIDER: replicate
+          HF_TTS_VOICE: af_nicole
+          HF_MUSIC_MODEL: m-a-p/YuE-s1-7B-anneal-en-cot
+          HF_MUSIC_PROVIDER: fal-ai
+
+          REPLICATE_IMAGE_MODEL: ${{ vars.REPLICATE_IMAGE_MODEL }}
+          REPLICATE_VIDEO_MODEL: ${{ vars.REPLICATE_VIDEO_MODEL }}
+
+          KREA_IMAGE_ENDPOINT: ${{ vars.KREA_IMAGE_ENDPOINT }}
+          KREA_VIDEO_ENDPOINT: ${{ vars.KREA_VIDEO_ENDPOINT }}
+
+          KIE_IMAGE_ENDPOINT: ${{ vars.KIE_IMAGE_ENDPOINT }}
+          KIE_IMAGE_STATUS_ENDPOINT: ${{ vars.KIE_IMAGE_STATUS_ENDPOINT }}
+          KIE_VIDEO_ENDPOINT: ${{ vars.KIE_VIDEO_ENDPOINT }}
+          KIE_VIDEO_STATUS_ENDPOINT: ${{ vars.KIE_VIDEO_STATUS_ENDPOINT }}
+          KIE_AUDIO_ENDPOINT: ${{ vars.KIE_AUDIO_ENDPOINT }}
+          KIE_AUDIO_STATUS_ENDPOINT: ${{ vars.KIE_AUDIO_STATUS_ENDPOINT }}
+
+          PIXAZO_IMAGE_ENDPOINT: ${{ vars.PIXAZO_IMAGE_ENDPOINT }}
+          PIXAZO_IMAGE_STATUS_ENDPOINT: ${{ vars.PIXAZO_IMAGE_STATUS_ENDPOINT }}
+          PIXAZO_VIDEO_ENDPOINT: ${{ vars.PIXAZO_VIDEO_ENDPOINT }}
+          PIXAZO_VIDEO_STATUS_ENDPOINT: ${{ vars.PIXAZO_VIDEO_STATUS_ENDPOINT }}
+
+          SUNO_API_BASE_URL: ${{ vars.SUNO_API_BASE_URL }}
+          SUNO_GENERATE_ENDPOINT: ${{ vars.SUNO_GENERATE_ENDPOINT }}
+          SUNO_STATUS_ENDPOINT: ${{ vars.SUNO_STATUS_ENDPOINT }}
+
+          JSON2VIDEO_BASE_URL: ${{ vars.JSON2VIDEO_BASE_URL }}
+
+          ARIA_IMAGE_CHAIN: pollinations_image,krea_image,kie_image,pixazo_image,huggingface_image,fal_image,replicate_image
+          ARIA_VIDEO_CHAIN: krea_video,kie_video,pixazo_video,huggingface_video,fal_video,replicate_video
+          ARIA_TTS_CHAIN: elevenlabs_tts,pollinations_tts,huggingface_tts
+          ARIA_MUSIC_CHAIN: suno_music,kie_music,pollinations_audio,huggingface_musicgen,fal_music
+          ARIA_COMPOSITION_CHAIN: json2video_render
+
+          ARIA_OUTPUT_DIR: outputs
+          ARIA_PROVIDER_STATE: outputs/.aria_provider_usage.json
+
         run: python agent.py
 
       - name: Save completed jobs
@@ -48,6 +106,6 @@ jobs:
           git add jobs outputs
 
           if ! git diff --cached --quiet; then
-            git commit -m "feat: add AI provider failover"
+            git commit -m "feat: rotate AI media providers"
             git push
           fi

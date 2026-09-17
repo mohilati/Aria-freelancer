@@ -1,10 +1,7 @@
-name: Aria Media Test
+name: Aria Media Provider Pool Test
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "jobs/media-test.json"
 
 permissions:
   contents: write
@@ -12,7 +9,7 @@ permissions:
 jobs:
   media-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -26,30 +23,83 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run media test
+      - name: Run full provider pool test
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_VIDEO_MODEL: Wan-AI/Wan2.2-TI2V-5B
-          HF_VIDEO_PROVIDER: replicate
-          HF_TTS_MODEL: hexgrad/Kokoro-82M
-          HF_TTS_PROVIDER: replicate
-          HF_MUSIC_MODEL: m-a-p/YuE-s1-7B-anneal-en-cot
-          HF_MUSIC_PROVIDER: fal-ai
+          ARIA_OUTPUT_DIR: outputs/media-test
+          ARIA_PROVIDER_STATE: outputs/media-test/.aria_provider_usage.json
 
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+          KREA_API_KEY: ${{ secrets.KREA_API_KEY }}
+          KIEAI_API_KEY: ${{ secrets.KIEAI_API_KEY }}
+          KIE_API_KEY: ${{ secrets.KIE_API_KEY }}
+          PIXAZO_API_KEY: ${{ secrets.PIXAZO_API_KEY }}
+          SUNO_API_KEY: ${{ secrets.SUNO_API_KEY }}
+          JSON2VIDEO_API_KEY: ${{ secrets.JSON2VIDEO_API_KEY }}
+
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_1: ${{ secrets.HF_TOKEN_1 }}
+          HUGGINGFACEHUB_API_TOKEN: ${{ secrets.HUGGINGFACEHUB_API_TOKEN }}
           FAL_KEY: ${{ secrets.FAL_KEY }}
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
 
-        run: python agent.py
+          HF_IMAGE_MODEL: black-forest-labs/FLUX.1-schnell
+          HF_IMAGE_PROVIDER: fal-ai
+          HF_VIDEO_MODEL: Wan-AI/Wan2.2-TI2V-5B
+          HF_VIDEO_PROVIDER: replicate
+          HF_TTS_MODEL: hexgrad/Kokoro-82M
+          HF_TTS_PROVIDER: replicate
+          HF_TTS_VOICE: af_nicole
+          HF_MUSIC_MODEL: m-a-p/YuE-s1-7B-anneal-en-cot
+          HF_MUSIC_PROVIDER: fal-ai
 
-      - name: Save media test outputs
+          REPLICATE_IMAGE_MODEL: ${{ vars.REPLICATE_IMAGE_MODEL }}
+          REPLICATE_VIDEO_MODEL: ${{ vars.REPLICATE_VIDEO_MODEL }}
+
+          KREA_IMAGE_ENDPOINT: ${{ vars.KREA_IMAGE_ENDPOINT }}
+          KREA_VIDEO_ENDPOINT: ${{ vars.KREA_VIDEO_ENDPOINT }}
+
+          KIE_IMAGE_ENDPOINT: ${{ vars.KIE_IMAGE_ENDPOINT }}
+          KIE_IMAGE_STATUS_ENDPOINT: ${{ vars.KIE_IMAGE_STATUS_ENDPOINT }}
+          KIE_VIDEO_ENDPOINT: ${{ vars.KIE_VIDEO_ENDPOINT }}
+          KIE_VIDEO_STATUS_ENDPOINT: ${{ vars.KIE_VIDEO_STATUS_ENDPOINT }}
+          KIE_AUDIO_ENDPOINT: ${{ vars.KIE_AUDIO_ENDPOINT }}
+          KIE_AUDIO_STATUS_ENDPOINT: ${{ vars.KIE_AUDIO_STATUS_ENDPOINT }}
+
+          PIXAZO_IMAGE_ENDPOINT: ${{ vars.PIXAZO_IMAGE_ENDPOINT }}
+          PIXAZO_IMAGE_STATUS_ENDPOINT: ${{ vars.PIXAZO_IMAGE_STATUS_ENDPOINT }}
+          PIXAZO_VIDEO_ENDPOINT: ${{ vars.PIXAZO_VIDEO_ENDPOINT }}
+          PIXAZO_VIDEO_STATUS_ENDPOINT: ${{ vars.PIXAZO_VIDEO_STATUS_ENDPOINT }}
+
+          SUNO_API_BASE_URL: ${{ vars.SUNO_API_BASE_URL }}
+          SUNO_GENERATE_ENDPOINT: ${{ vars.SUNO_GENERATE_ENDPOINT }}
+          SUNO_STATUS_ENDPOINT: ${{ vars.SUNO_STATUS_ENDPOINT }}
+
+          JSON2VIDEO_BASE_URL: ${{ vars.JSON2VIDEO_BASE_URL }}
+
+          ARIA_IMAGE_CHAIN: pollinations_image,krea_image,kie_image,pixazo_image,huggingface_image,fal_image,replicate_image
+          ARIA_VIDEO_CHAIN: krea_video,kie_video,pixazo_video,huggingface_video,fal_video,replicate_video
+          ARIA_TTS_CHAIN: elevenlabs_tts,pollinations_tts,huggingface_tts
+          ARIA_MUSIC_CHAIN: suno_music,kie_music,pollinations_audio,huggingface_musicgen,fal_music
+          ARIA_COMPOSITION_CHAIN: json2video_render
+
+        run: python media_stack_test.py
+
+      - name: Upload media test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-media-provider-pool-results
+          path: outputs/media-test/
+          if-no-files-found: ignore
+
+      - name: Save media test state
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add jobs outputs
-
+          git add outputs/media-test
           if ! git diff --cached --quiet; then
-            git commit -m "test: run media providers"
+            git commit -m "test: record media provider pool run"
             git push
           fi
