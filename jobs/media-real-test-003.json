@@ -1,0 +1,29 @@
+{
+  "id": "media-real-test-003",
+  "status": "pending",
+  "brief": "تست واقعی تمام Media Providerها برای Aria Freelancer. برای هر نوع خروجی یک نمونه تولید کن و نتیجه provider و مسیر فایل خروجی را ثبت کن.",
+  "platform": "Test",
+  "language": "English",
+  "audience": "media provider integration test",
+  "tone": "clear",
+  "goal": "verify image, video, TTS, and music generation",
+  "content_type": "media integration test",
+  "brand_voice": "technical",
+  "constraints": [
+    "Run the real providers configured by the media router.",
+    "Do not skip this job because it is pending.",
+    "Save generated media under outputs/media-test."
+  ],
+  "deliverables": [
+    "one test image",
+    "one short test video",
+    "one short TTS audio file",
+    "one short music/audio generation"
+  ],
+  "media_tests": {
+    "image_prompt": "A simple cinematic sunrise over a calm ocean, clean composition",
+    "video_prompt": "A calm ocean at sunrise with gentle waves and slow camera movement",
+    "tts_text": "This is a real Aria Freelancer text to speech provider test.",
+    "music_prompt": "A short calm cinematic instrumental piece for a sunrise scene"
+  }
+}
