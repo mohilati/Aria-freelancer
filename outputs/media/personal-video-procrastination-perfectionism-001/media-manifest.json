@@ -1,0 +1,95 @@
+{
+  "job_id": "personal-video-procrastination-perfectionism-001",
+  "media_plan": {
+    "title": "رابطه اهمال‌کاری و کمال‌گرایی",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 50,
+    "visual_style": "Cinematic, dark, minimal, psychological thriller atmosphere, moody shadows, photorealistic",
+    "music_prompt": "Original instrumental suspense music, dark and cinematic ambient, no vocals, featuring deep drones and slow cello building into a warm, hopeful resolving melody in the final seconds, suitable as background.",
+    "scenes": [
+      {
+        "duration": 8,
+        "visual_prompt": "Cinematic medium shot of a person sitting in a dark room, illuminated only by the faint, cold glow of an unlit monitor, looking overwhelmed, psychological thriller atmosphere, moody shadows, photorealistic, 8k --ar 9:16",
+        "on_screen_text": "استانداردهای بالاتر = شروع کمتر؟",
+        "narration": "تا حالا فکر کردی چرا هرچقدر استانداردهات رو بالاتر می‌بری، کمتر کاری رو شروع می‌کنی؟"
+      },
+      {
+        "duration": 10,
+        "visual_prompt": "Close-up shot of hands trembling slightly over a blank notebook, dark cinematic lighting, heavy shadows, psychological weight, anxious mood, photorealistic --ar 9:16",
+        "on_screen_text": "تنبلی... یا ترس از ناکافی بودن؟",
+        "narration": "ما فکر می‌کنیم تنبلی می‌کنیم... اما حقیقت اینه که ترس از بی‌نقص نبودن، دست‌هامون رو بسته."
+      },
+      {
+        "duration": 12,
+        "visual_prompt": "Low angle cinematic shot, a person standing in front of a massive glaring white canvas, dwarfed by the scale, heavy dark atmosphere, psychological suspense, dramatic contrast --ar 9:16",
+        "on_screen_text": "کمال‌گرایی؛ سپر دفاعی ناخودآگاه",
+        "narration": "ذهن ما کمال‌گرایی رو سپر دفاعی خودش می‌کنه تا مبادا با یک اشتباه، ارزش درونی‌مون زیر سوال بره."
+      },
+      {
+        "duration": 10,
+        "visual_prompt": "Cinematic wide shot of a messy desk, endless to-do lists scattered, dark moody room, cold color grading, aesthetic psychological drama --ar 9:16",
+        "on_screen_text": "بهای سنگینِ بی‌نقص بودن",
+        "narration": "اما قیمت این محافظت چیه؟ ساعت‌ها خیره‌شدن به صفحه خالی، و کوهی از کارهای انجام‌نشده."
+      },
+      {
+        "duration": 10,
+        "visual_prompt": "Cinematic close-up, warm amber light breaking through the darkness, a hand confidently writing the first word on paper, hopeful and calm atmosphere, high detail --ar 9:16",
+        "on_screen_text": "شروعِ نقص‌دار، آغازِ رهایی",
+        "narration": "شاید راه‌حل این نباشه که کامل‌تر باشیم... شاید جادو توی پذیرشِ شروعِ نقص‌داره."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-70adc3045d-f710c3a9a1.jpg",
+      "voice": "outputs/audio-1789682717270547239.mp3",
+      "text": "استانداردهای بالاتر = شروع کمتر؟"
+    },
+    {
+      "index": 2,
+      "duration": 10.0,
+      "video": null,
+      "image": "outputs/pollinations-image-a22d3eecd7-60305235ad.jpg",
+      "voice": "outputs/audio-1789682729003819997.mp3",
+      "text": "تنبلی... یا ترس از ناکافی بودن؟"
+    },
+    {
+      "index": 3,
+      "duration": 12.0,
+      "video": null,
+      "image": "outputs/pollinations-image-cc953cefb2-39b729aa83.jpg",
+      "voice": "outputs/audio-1789682740655014503.mp3",
+      "text": "کمال‌گرایی؛ سپر دفاعی ناخودآگاه"
+    },
+    {
+      "index": 4,
+      "duration": 10.0,
+      "video": null,
+      "image": "outputs/pollinations-image-d7f8b88d44-4bf0143a87.jpg",
+      "voice": "outputs/audio-1789682751207973230.mp3",
+      "text": "بهای سنگینِ بی‌نقص بودن"
+    },
+    {
+      "index": 5,
+      "duration": 10.0,
+      "video": null,
+      "image": "outputs/pollinations-image-4c7fd5e4e5-6ffd25c4ec.jpg",
+      "voice": "outputs/audio-1789682761136983562.mp3",
+      "text": "شروعِ نقص‌دار، آغازِ رهایی"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "output_url": null,
+    "error": "music providers exhausted: suno_music: cooldown active | kie_music: cooldown active | pollinations_audio: cooldown active | fal_music: cooldown active",
+    "skipped": true,
+    "reason": "all configured providers were unavailable, capped, or failed"
+  },
+  "final_video": "outputs/media/personal-video-procrastination-perfectionism-001/personal-video-procrastination-perfectionism-001.mp4",
+  "failures": []
+}

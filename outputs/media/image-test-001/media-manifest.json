@@ -1,0 +1,123 @@
+{
+  "job_id": "image-test-001",
+  "media_plan": {
+    "title": "پاتوق جدید تو تهران",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 50,
+    "visual_style": "Cinematic modern cafe interiors, warm amber lighting, shallow depth of field, slow panning shots of coffee extraction and modern seating areas.",
+    "music_prompt": "Original instrumental suspense music, dark cinematic ambient beats, no vocals, subtle tension building with smooth rhythmic bass suitable as a background.",
+    "scenes": [
+      {
+        "duration": 6,
+        "visual_prompt": "Cinematic close-up shot of a steaming espresso machine in a dimly lit, modern cafe. Steam rises slowly under soft amber lighting.",
+        "on_screen_text": "دنبال یه جای دنج؟",
+        "narration": "دنبال یه جای دنج و مدرن تو تهران می‌گردی که هم بشه کار کرد هم قهوه عالی خورد؟"
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Medium pan shot showing a stylish, sunlit workspace corner inside the cafe. A laptop sits on a clean wooden table next to a fresh latte.",
+        "on_screen_text": "کار و دورهمی",
+        "narration": "اینجا همون پاتوقیه‌ که برای کار با لپ‌تاپ و دورهمی‌های صمیمی بهش نیاز داری."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Macro slow-motion shot of rich dark espresso pouring into a glass, creating beautiful crema layers.",
+        "on_screen_text": "قهوه تخصصی",
+        "narration": "از عصاره‌گیری دقیق قهوه‌های تخصصی گرفته تا طعم بی‌نظیری که هوشت رو می‌بره."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Close-up cinematic shot of a barista expertly pouring milk into a ceramic cup, forming a precise latte art heart.",
+        "on_screen_text": "هنر باریستا",
+        "narration": "پشت هر فنجان، عشق و مهارت تیم ماست که بهترین لحظه‌ها رو برات می‌سازه."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Slow sliding shot over freshly baked artisan cakes displayed on a clean marble counter next to a warm cup of coffee.",
+        "on_screen_text": "دسرهای تازه",
+        "narration": "هیچ ترکیبی به اندازه قهوه و این دسرهای دست‌ساز و تازه نمی‌چسبه."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Warm, welcoming wide shot of the cafe interior showing friendly customers chatting softly and smiling in the evening ambience.",
+        "on_screen_text": "مهمان ما باشید",
+        "narration": "منتظر حضور گرمت هستیم. دوست داری این قهوه رو با کی امتحان کنی؟"
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Clean aesthetic shot of the cafe entrance sign with subtle cinematic lens flare and warm interior glow.",
+        "on_screen_text": "رزرو میز در دایرکت",
+        "narration": "همین الان تگش کن یا برای رزرو میز دایرکت بده."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 6.0,
+      "video": null,
+      "image": "outputs/pollinations-image-2031060042-bc38c548da.jpg",
+      "voice": "outputs/audio-1789682609831888020.mp3",
+      "text": "دنبال یه جای دنج؟"
+    },
+    {
+      "index": 2,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-32340f11f2-09c84bf7fd.jpg",
+      "voice": "outputs/audio-1789682618232427523.mp3",
+      "text": "کار و دورهمی"
+    },
+    {
+      "index": 3,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-65ec38f3e7-c4e63c63b1.jpg",
+      "voice": "outputs/audio-1789682628470438575.mp3",
+      "text": "قهوه تخصصی"
+    },
+    {
+      "index": 4,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-b0a42fde29-9e74ee0096.jpg",
+      "voice": "outputs/audio-1789682638576238218.mp3",
+      "text": "هنر باریستا"
+    },
+    {
+      "index": 5,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-4fb378f4ba-76f130db82.jpg",
+      "voice": "outputs/audio-1789682647337549158.mp3",
+      "text": "دسرهای تازه"
+    },
+    {
+      "index": 6,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-705659244b-f871db692a.jpg",
+      "voice": "outputs/audio-1789682655745094693.mp3",
+      "text": "مهمان ما باشید"
+    },
+    {
+      "index": 7,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-4ac4958060-c50fe246f8.jpg",
+      "voice": "outputs/audio-1789682662936867665.mp3",
+      "text": "رزرو میز در دایرکت"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "output_url": null,
+    "error": "music providers exhausted: suno_music: cooldown active | kie_music: cooldown active | pollinations_audio: cooldown active | fal_music: cooldown active",
+    "skipped": true,
+    "reason": "all configured providers were unavailable, capped, or failed"
+  },
+  "final_video": "outputs/media/image-test-001/image-test-001.mp4",
+  "failures": []
+}

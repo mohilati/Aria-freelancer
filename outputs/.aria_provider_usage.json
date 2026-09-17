@@ -1,10 +1,31 @@
 {
   "date": "2026-09-17",
   "usage": {
-    "pollinations_image": 1
+    "pollinations_image": 34,
+    "elevenlabs_tts": 33
   },
-  "cooldowns": {},
+  "cooldowns": {
+    "pollinations_video": 1789704072.8859394,
+    "krea_video": 1789704073.192272,
+    "kie_video": 1789683131.0357597,
+    "pixazo_video": 1789683131.0360658,
+    "huggingface_video": 1789704073.8611302,
+    "fal_video": 1789683131.1805854,
+    "replicate_video": 1789683131.1808436,
+    "krea_image": 1789704075.3728504,
+    "kie_image": 1789683131.1811507,
+    "pixazo_image": 1789683131.1813223,
+    "huggingface_image": 1789704075.4836533,
+    "fal_image": 1789683131.2090518,
+    "replicate_image": 1789683131.2092917,
+    "huggingface_tts": 1789683141.0996811,
+    "suno_music": 1789683220.717052,
+    "kie_music": 1789683220.7173648,
+    "pollinations_audio": 1789704138.3755555,
+    "fal_music": 1789683220.8208952
+  },
   "cursor": {
-    "image": 1
+    "image": 1,
+    "tts": 1
   }
 }

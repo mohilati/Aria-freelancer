@@ -1,6 +1,6 @@
 {
   "id": "personal-video-procrastination-perfectionism-001",
-  "status": "pending",
+  "status": "completed",
   "brief": "یک پست ویدئویی حرفه‌ای برای شبکه اجتماعی تولید کن درباره رابطه اهمال‌کاری و کمال‌گرایی. محتوای ویدئو باید توضیح دهد که چگونه استانداردهای بیش‌ازحد بالا، ترس از اشتباه و نارضایتی دائمی می‌توانند شروع کردن کار را سخت کنند. هدف محتوا افزایش آگاهی و تعامل مخاطب است، نه تشخیص یا درمان. محتوای عمیق، روان، قابل فهم، کاربردی و غیرکلیک‌بیتی باشد.",
   "platform": "Instagram",
   "language": "Persian",
@@ -33,5 +33,46 @@
     "پیشنهاد CTA غیرکلیک‌بیتی",
     "نسخه نهایی یکپارچه و آماده تدوین",
     "فایل ویدئویی نهایی MP4"
-  ]
+  ],
+  "content_plan": {
+    "content_goal": "افزایش تعامل، ذخیره و اشتراک‌گذاری پست ویدئویی با تمرکز بر ریشه‌های روانی اهمال‌کاری ناشی از کمال‌گرایی",
+    "audience_angle": "بررسی ریشه‌های پنهان پشت به تعویق انداختن کارها برای افرادی که همواره با استانداردهای سخت‌گیرانه خود در جنگ هستند",
+    "core_message": "کمال‌گرایی افراطی و ترس از بی‌نقص نبودن، نامرئی‌ترین مانع برای شروع کارهاست و اهمال‌کاری اغلب سپر دفاعی ناخودآگاه ما در برابر این ترس است",
+    "content_pillars": [
+      "روان‌شناسی رشد فردی",
+      "شناخت الگوهای ذهنی بازدارنده",
+      "راهکارهای عملی گذر از موانع درونی"
+    ],
+    "formats": [
+      "ویدئوی کوتاه سینمایی و مفهومی (Reels)"
+    ],
+    "hooks": [
+      "چرا هرچه استانداردهایت بالاتر می‌رود، کمتر کاری انجام می‌دهی؟"
+    ],
+    "call_to_action": "تجربه شخصی خودتان را از این چرخه در بخش نظرات بنویسید و این ویدئو را برای کسی که می‌دانید به این فضا نیاز دارد، بفرستید.",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "رابطه پنهان میان استانداردهای بالا و تله اهمال‌کاری",
+        "format": "Reels",
+        "hook": "چرا هرچه استانداردهایت بالاتر می‌رود، کمتر کاری انجام می‌دهی؟"
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review_history": [
+    {
+      "status": "approved",
+      "score": 98,
+      "issues": [],
+      "missing_deliverables": [],
+      "revision_instructions": [],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    }
+  ],
+  "final_video": "outputs/media/personal-video-procrastination-perfectionism-001/personal-video-procrastination-perfectionism-001.mp4",
+  "media_manifest": "outputs/media/personal-video-procrastination-perfectionism-001/media-manifest.json",
+  "output": "outputs/personal-video-procrastination-perfectionism-001.md"
 }

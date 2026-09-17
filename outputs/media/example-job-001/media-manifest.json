@@ -1,0 +1,109 @@
+{
+  "job_id": "example-job-001",
+  "media_plan": {
+    "title": "چرا مشاوره پوستی از خود خدمات زیبایی مهم‌تره؟",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 50,
+    "visual_style": "Cinematic, moody lighting, shallow depth of field, elegant interior of a modern Tehran skin clinic, professional color grading with warm skin tones and cool teal shadows.",
+    "music_prompt": "Original instrumental suspense music, dark and cinematic, slow rhythmic heartbeat pulse, elegant piano notes, no vocals, suitable as professional background.",
+    "scenes": [
+      {
+        "duration": 6,
+        "visual_prompt": "Close-up cinematic shot of a woman looking at her reflection in a dimly lit vanity mirror, touching her skin anxiously, moody lighting, shallow depth of field.",
+        "on_screen_text": "چرا مشاوره پوستی مهم‌تره؟",
+        "narration": "شاید فکر کنید مشاوره فقط یک تشریفات ساده قبل از کاره..."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Medium shot of an unfinished skincare checklist on a wooden desk, a hand holding a pen hovering over repeated corrections and crossed-out words, soft cinematic shadows.",
+        "on_screen_text": "اصول مراقبت از پوست",
+        "narration": "...اما حقیقت اینه که نقطه شروع تمام خدمات ایمن و موفق، یک مشاوره دقیق و تخصصی است."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Close-up cinematic shot of a professional skin analyzer device glowing softly in a modern clinic consultation room, reflecting on a glass surface.",
+        "on_screen_text": "بررسی تخصصی نیازهای پوست",
+        "narration": "پوست هر فرد ویژگی‌ها، نیازها و شرایط منحصر به فرد خودش رو داره."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Medium cinematic shot of a skincare specialist in a white coat speaking calmly and professionally in a well-lit, elegant consultation office, hand gestures conveying trust.",
+        "on_screen_text": "طراحی مسیر ایمن و اختصاصی",
+        "narration": "بدون بررسی دقیق نوع پوست و ساختار چهره، نمی‌تونیم انتظار بهترین نتیجه رو داشته باشیم."
+      },
+      {
+        "duration": 10,
+        "visual_prompt": "Warm cinematic shot of a woman smiling gently and naturally while looking into a clear mirror in a bright, safe, and professional clinic environment.",
+        "on_screen_text": "حفظ شادابی و زیبایی طبیعی",
+        "narration": "متخصصان ما آماده‌اند تا با بررسی دقیق شرایط شما، بهترین و ایمن‌ترین مسیر رو پیشنهاد بدن."
+      },
+      {
+        "duration": 10,
+        "visual_prompt": "Clean and elegant closing frame showing the clinic's consultation desk with soft lighting, subtle motion graphic overlay of direct message instructions.",
+        "on_screen_text": "ارسال کلمه «مشاوره» در دایرکت",
+        "narration": "برای دریافت مشاوره تخصصی و رزرو وقت، کلمه «مشاوره» را دایرکت کنید."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 6.0,
+      "video": null,
+      "image": "outputs/pollinations-image-9742bddc1d-68bd82155c.jpg",
+      "voice": "outputs/audio-1789682487085684864.mp3",
+      "text": "چرا مشاوره پوستی مهم‌تره؟"
+    },
+    {
+      "index": 2,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-919fa044d1-076305be20.jpg",
+      "voice": "outputs/audio-1789682495988931635.mp3",
+      "text": "اصول مراقبت از پوست"
+    },
+    {
+      "index": 3,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-7be359b2a2-a869652fd2.jpg",
+      "voice": "outputs/audio-1789682506342448703.mp3",
+      "text": "بررسی تخصصی نیازهای پوست"
+    },
+    {
+      "index": 4,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/pollinations-image-bfad5c6de2-984e7c4f91.jpg",
+      "voice": "outputs/audio-1789682515984873581.mp3",
+      "text": "طراحی مسیر ایمن و اختصاصی"
+    },
+    {
+      "index": 5,
+      "duration": 10.0,
+      "video": null,
+      "image": "outputs/pollinations-image-3589bafa45-1e008223cb.jpg",
+      "voice": "outputs/audio-1789682528406294515.mp3",
+      "text": "حفظ شادابی و زیبایی طبیعی"
+    },
+    {
+      "index": 6,
+      "duration": 10.0,
+      "video": null,
+      "image": "outputs/pollinations-image-8559d80c35-ebfcbbafc2.jpg",
+      "voice": "outputs/audio-1789682537125448925.mp3",
+      "text": "ارسال کلمه «مشاوره» در دایرکت"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "output_url": null,
+    "error": "music providers exhausted: suno_music: RuntimeError: Suno returned no taskId: {'code': 400, 'msg': 'Please enter callBackUrl.', 'data': None} | kie_music: RuntimeError: KIE_AUDIO_ENDPOINT is not configured | pollinations_audio: HTTPStatusError: Client error '402 Payment Required' for url 'https://gen.pollinations.ai/audio/Original%20instrumental%20suspense%20music%2C%20dark%20and%20cinematic%2C%20slow%20rhythmic%20heartbeat%20pulse%2C%20elegant%20piano%20notes%2C%20no%20vocals%2C%20suitable%20as%20professional%20background.'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402 | fal_music: FalClientHTTPError: User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing.",
+    "skipped": true,
+    "reason": "all configured providers were unavailable, capped, or failed"
+  },
+  "final_video": "outputs/media/example-job-001/example-job-001.mp4",
+  "failures": []
+}

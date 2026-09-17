@@ -1,0 +1,123 @@
+{
+  "job_id": "review-real-test-001",
+  "media_plan": {
+    "title": "چرخه پنهان کمال‌گرایی و اهمال‌کاری",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 48,
+    "visual_style": "Cinematic, moody, desaturated tones with sharp focal points, professional slow-motion, minimalist interior setting, reflections in mirrors and glass windows.",
+    "music_prompt": "Original instrumental suspense music, dark and cinematic, ambient pads, slow ticking rhythm, no vocals, suitable as background for psychological analysis.",
+    "scenes": [
+      {
+        "duration": 6,
+        "visual_prompt": "A close-up cinematic shot of a person staring blankly at a glowing laptop screen in a dimly lit room, their reflection clearly visible in the dark glass.",
+        "on_screen_text": "اهمال‌کاری همیشه تنبلی نیست",
+        "narration": "اهمال‌کاری همیشه تنبلی نیست؛ گاهی حصاری است که دور معیارهای غیرممکن کشیده‌ایم."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A hand holding a pen repeatedly writing and crossing out words on a piece of paper, leaving a heavy indented mark of frustration, dramatic side lighting.",
+        "on_screen_text": "معیارهای غیرممکن",
+        "narration": "وقتی تعریف ما از عملکردمان با کلمه کامل گره خورده باشد، شروع کردن به عبور از میدان مین تبدیل می‌شود."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A medium shot of an unfinished canvas or a blank document on a desk, while a person looks away hesitantly, avoiding the workspace.",
+        "on_screen_text": "ترس از کامل نبودن",
+        "narration": "ذهن محاسبه می‌کند: اگر شروع کنم و نتیجه شاهکار نباشد، یعنی شکست خورده‌ام."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A slow cinematic pan across a room showing stacks of unopened books and unorganized papers, emphasizing avoidance and mental clutter.",
+        "on_screen_text": "حفاظت از عزت‌نفس",
+        "narration": "و از آنجا که این چشم‌انداز تهدیدکننده است، ذهن ترجیح می‌دهد راه امن‌تر را انتخاب کند: اصلا شروع نکردن."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A close-up of a person looking at their reflection in a slightly cracked mirror, soft moody shadows, neutral and contemplative expression.",
+        "on_screen_text": "هزینه سنگین کمال‌گرایی",
+        "narration": "تا زمانی که کاری را شروع نکرده‌ایم، پشت این سپر دفاعی پنهان می‌مانیم تا با واقعیت محدودیت‌های انسانی روبه‌رو نشویم."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A warm, soft light breaking through a window blinds onto a clean desk, symbolizing acceptance and a gentle breath of relief.",
+        "on_screen_text": "پذیرش خطاپذیری انسانی",
+        "narration": "پذیرش این واقعیت که مجازیم کارهایمان را معمولی انجام دهیم، اولین قدم برای بیرون آمدن از این بن‌بست است."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A calm, grounded cinematic portrait of a person taking a deep breath and gently closing the laptop, soft natural lighting, peaceful atmosphere.",
+        "on_screen_text": "تجربه خود را بنویسید",
+        "narration": "تجربه خودتان از این چرخه را بدون قضاوت در کامنت‌ها بنویسید یا این تحلیل را برای کسی که به آن نیاز دارد بفرستید."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 6.0,
+      "video": null,
+      "image": "outputs/pollinations-image-5376d4c414-28f0b1f58b.jpg",
+      "voice": "outputs/audio-1789683031425770150.mp3",
+      "text": "اهمال‌کاری همیشه تنبلی نیست"
+    },
+    {
+      "index": 2,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-ef7f38e635-02eb15f4f4.jpg",
+      "voice": "outputs/audio-1789683042078827839.mp3",
+      "text": "معیارهای غیرممکن"
+    },
+    {
+      "index": 3,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-1d7e666fa2-d7f7d4f246.jpg",
+      "voice": "outputs/audio-1789683050515540617.mp3",
+      "text": "ترس از کامل نبودن"
+    },
+    {
+      "index": 4,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-8cca359179-b3f41fdd60.jpg",
+      "voice": "outputs/audio-1789683060944284987.mp3",
+      "text": "حفاظت از عزت‌نفس"
+    },
+    {
+      "index": 5,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-230ca89175-9def5bb54a.jpg",
+      "voice": "outputs/audio-1789683070104320587.mp3",
+      "text": "هزینه سنگین کمال‌گرایی"
+    },
+    {
+      "index": 6,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-5c04838426-e5956baf49.jpg",
+      "voice": "outputs/audio-1789683078365216615.mp3",
+      "text": "پذیرش خطاپذیری انسانی"
+    },
+    {
+      "index": 7,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/pollinations-image-a1d0b33320-327a221fea.jpg",
+      "voice": "outputs/audio-1789683091297611480.mp3",
+      "text": "تجربه خود را بنویسید"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "output_url": null,
+    "error": "music providers exhausted: suno_music: cooldown active | kie_music: cooldown active | pollinations_audio: cooldown active | fal_music: cooldown active",
+    "skipped": true,
+    "reason": "all configured providers were unavailable, capped, or failed"
+  },
+  "final_video": "outputs/media/review-real-test-001/review-real-test-001.mp4",
+  "failures": []
+}
