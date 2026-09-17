@@ -1,5 +1,4 @@
 import os
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -16,24 +15,15 @@ except ImportError:
     InferenceClient = None
 
 
-OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test"))
+OUTPUT_DIR = Path(
+    os.getenv("ARIA_OUTPUT_DIR", "outputs/media-test")
+)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================================
 # Helpers
 # ============================================================
-
-def _download(url: str, output_path: Path) -> str:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with httpx.Client(timeout=180.0, follow_redirects=True) as client:
-        response = client.get(url)
-        response.raise_for_status()
-        output_path.write_bytes(response.content)
-
-    return str(output_path)
-
 
 def _hf_token() -> Optional[str]:
     return (
@@ -43,19 +33,35 @@ def _hf_token() -> Optional[str]:
     )
 
 
-def _hf_client(provider: Optional[str] = None):
+def _download(url: str, output_path: Path) -> str:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with httpx.Client(
+        timeout=180.0,
+        follow_redirects=True,
+    ) as client:
+        response = client.get(url)
+        response.raise_for_status()
+        output_path.write_bytes(response.content)
+
+    return str(output_path)
+
+
+def _hf_client(provider: str = "auto"):
     if InferenceClient is None:
-        raise RuntimeError("huggingface_hub is not installed")
+        raise RuntimeError(
+            "huggingface_hub is not installed"
+        )
 
     token = _hf_token()
 
     if not token:
-        raise RuntimeError("HF token is not configured")
-
-    provider_name = provider or os.getenv("HF_AUDIO_PROVIDER", "auto")
+        raise RuntimeError(
+            "HF token is not configured"
+        )
 
     return InferenceClient(
-        provider=provider_name,
+        provider=provider,
         api_key=token,
     )
 
@@ -73,7 +79,9 @@ def elevenlabs_tts(
     api_key = os.getenv("ELEVENLABS_API_KEY")
 
     if not api_key:
-        raise RuntimeError("ELEVENLABS_API_KEY is not configured")
+        raise RuntimeError(
+            "ELEVENLABS_API_KEY is not configured"
+        )
 
     voice_id = (
         os.getenv("ELEVENLABS_VOICE_ID")
@@ -91,7 +99,7 @@ def elevenlabs_tts(
     )
 
     url = (
-        f"https://api.elevenlabs.io/v1/text-to-speech/"
+        "https://api.elevenlabs.io/v1/text-to-speech/"
         f"{voice_id}"
     )
 
@@ -107,7 +115,10 @@ def elevenlabs_tts(
         "Accept": "audio/mpeg",
     }
 
-    with httpx.Client(timeout=180.0) as client:
+    with httpx.Client(
+        timeout=180.0,
+        follow_redirects=True,
+    ) as client:
         response = client.post(
             url,
             headers=headers,
@@ -116,7 +127,11 @@ def elevenlabs_tts(
 
         response.raise_for_status()
 
-        output.parent.mkdir(parents=True, exist_ok=True)
+        output.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
         output.write_bytes(response.content)
 
     return str(output)
@@ -132,46 +147,144 @@ def huggingface_tts(
     **kwargs,
 ) -> Optional[str]:
 
-    model = (
-        os.getenv("HF_TTS_MODEL")
-        or "hexgrad/Kokoro-82M"
-    )
+    if InferenceClient is None:
+        raise RuntimeError(
+            "huggingface_hub is not installed"
+        )
+
+    token = _hf_token()
+
+    if not token:
+        raise RuntimeError(
+            "HF token is not configured"
+        )
 
     provider = os.getenv(
         "HF_TTS_PROVIDER",
-        os.getenv("HF_AUDIO_PROVIDER", "auto"),
+        "auto",
     )
 
-    client = _hf_client(provider)
+    model = os.getenv(
+        "HF_TTS_MODEL",
+        "hexgrad/Kokoro-82M",
+    )
+
+    client = InferenceClient(
+        provider=provider,
+        api_key=token,
+    )
 
     output = Path(
         output_path
-        or OUTPUT_DIR / "tts-huggingface.wav"
+        or OUTPUT_DIR / "tts-huggingface.flac"
     )
 
-    output.parent.mkdir(parents=True, exist_ok=True)
+    output.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     audio = client.text_to_speech(
-        text,
+        text=text,
         model=model,
     )
 
     if audio is None:
-        raise RuntimeError("Hugging Face TTS returned no audio")
+        raise RuntimeError(
+            "Hugging Face returned no TTS audio"
+        )
 
     if isinstance(audio, bytes):
         output.write_bytes(audio)
         return str(output)
 
-    # Some versions/providers can return an object
-    # containing audio bytes.
-    if hasattr(audio, "tobytes"):
-        output.write_bytes(audio.tobytes())
-        return str(output)
+    if hasattr(audio, "read"):
+        data = audio.read()
+
+        if data:
+            output.write_bytes(data)
+            return str(output)
 
     raise RuntimeError(
-        f"Unsupported Hugging Face TTS response: "
+        "Unsupported Hugging Face TTS response: "
         f"{type(audio).__name__}"
+    )
+
+
+# ============================================================
+# FAL Music
+# ============================================================
+
+def fal_music(
+    prompt: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
+
+    if fal_client is None:
+        raise RuntimeError(
+            "fal-client is not installed"
+        )
+
+    if not os.getenv("FAL_KEY"):
+        raise RuntimeError(
+            "FAL_KEY is not configured"
+        )
+
+    model = (
+        os.getenv("FAL_MUSIC_MODEL")
+        or "fal-ai/stable-audio-3/small/music/text-to-audio"
+    )
+
+    duration = kwargs.get(
+        "duration",
+        15,
+    )
+
+    output_format = kwargs.get(
+        "output_format",
+        "mp3",
+    )
+
+    output = Path(
+        output_path
+        or OUTPUT_DIR / "music-fal.mp3"
+    )
+
+    result = fal_client.subscribe(
+        model,
+        arguments={
+            "prompt": prompt,
+            "duration": duration,
+            "output_format": output_format,
+        },
+        with_logs=False,
+    )
+
+    if not result:
+        raise RuntimeError(
+            "FAL Music returned no result"
+        )
+
+    audio = result.get("audio")
+
+    audio_url = None
+
+    if isinstance(audio, dict):
+        audio_url = audio.get("url")
+
+    if not audio_url:
+        audio_url = result.get("audio_url")
+
+    if not audio_url:
+        raise RuntimeError(
+            "FAL Music response did not contain "
+            "an audio URL"
+        )
+
+    return _download(
+        audio_url,
+        output,
     )
 
 
@@ -188,7 +301,9 @@ def lyria_music(
     api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
+        raise RuntimeError(
+            "GEMINI_API_KEY is not configured"
+        )
 
     model = (
         os.getenv("LYRIA_MODEL")
@@ -226,7 +341,10 @@ def lyria_music(
 
     for attempt in range(3):
         try:
-            with httpx.Client(timeout=180.0) as client:
+            with httpx.Client(
+                timeout=180.0,
+                follow_redirects=True,
+            ) as client:
                 response = client.post(
                     url,
                     headers=headers,
@@ -234,34 +352,53 @@ def lyria_music(
                 )
 
             if response.status_code == 429:
-                wait_seconds = 2 ** attempt
                 last_error = (
-                    f"Lyria rate limited: HTTP 429"
+                    "Lyria rate limited: HTTP 429"
                 )
-                time.sleep(wait_seconds)
+
+                if attempt < 2:
+                    import time
+                    time.sleep(2 ** attempt)
+
                 continue
 
             response.raise_for_status()
 
             data = response.json()
 
-            # Try common inline-data response shapes.
             audio_bytes = None
 
-            candidates = data.get("candidates", [])
+            candidates = data.get(
+                "candidates",
+                [],
+            )
 
             for candidate in candidates:
-                content = candidate.get("content", {})
+                content = candidate.get(
+                    "content",
+                    {},
+                )
 
-                for part in content.get("parts", []):
-                    inline_data = part.get("inlineData")
+                for part in content.get(
+                    "parts",
+                    [],
+                ):
+                    inline_data = part.get(
+                        "inlineData"
+                    )
 
-                    if inline_data and inline_data.get("data"):
+                    if (
+                        inline_data
+                        and inline_data.get("data")
+                    ):
                         import base64
 
-                        audio_bytes = base64.b64decode(
-                            inline_data["data"]
+                        audio_bytes = (
+                            base64.b64decode(
+                                inline_data["data"]
+                            )
                         )
+
                         break
 
                 if audio_bytes:
@@ -269,11 +406,18 @@ def lyria_music(
 
             if not audio_bytes:
                 raise RuntimeError(
-                    "Lyria response did not contain audio data"
+                    "Lyria response did not contain "
+                    "audio data"
                 )
 
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(audio_bytes)
+            output.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            output.write_bytes(
+                audio_bytes
+            )
 
             return str(output)
 
@@ -281,144 +425,11 @@ def lyria_music(
             last_error = exc
 
             if attempt < 2:
+                import time
                 time.sleep(2 ** attempt)
 
     raise RuntimeError(
         f"Lyria failed after retries: {last_error}"
-    )
-
-
-# ============================================================
-# FAL Music
-# ============================================================
-
-def fal_music(
-    prompt: str,
-    output_path: Optional[str] = None,
-    **kwargs,
-) -> Optional[str]:
-
-    if fal_client is None:
-        raise RuntimeError(
-            "fal-client is not installed"
-        )
-
-    fal_key = os.getenv("FAL_KEY")
-
-    if not fal_key:
-        raise RuntimeError("FAL_KEY is not configured")
-
-    model = (
-        os.getenv("FAL_MUSIC_MODEL")
-        or "fal-ai/stable-audio-3/small/music/text-to-audio"
-    )
-
-    duration = kwargs.get(
-        "duration",
-        15,
-    )
-
-    output_format = kwargs.get(
-        "output_format",
-        "mp3",
-    )
-
-    output = Path(
-        output_path
-        or OUTPUT_DIR / "music-fal.mp3"
-    )
-
-    result = fal_client.subscribe(
-        model,
-        arguments={
-            "prompt": prompt,
-            "duration": duration,
-            "output_format": output_format,
-        },
-        with_logs=False,
-    )
-
-    if not result:
-        raise RuntimeError(
-            "FAL Music returned no result"
-        )
-
-    audio_url = None
-
-    # Common FAL response shape.
-    audio = result.get("audio")
-
-    if isinstance(audio, dict):
-        audio_url = audio.get("url")
-
-    if not audio_url:
-        audio_url = result.get("audio_url")
-
-    if not audio_url:
-        raise RuntimeError(
-            "FAL Music response did not contain an audio URL"
-        )
-
-    return _download(
-        audio_url,
-        output,
-    )
-
-
-# ============================================================
-# Hugging Face Music
-# ============================================================
-
-def huggingface_music(
-    prompt: str,
-    output_path: Optional[str] = None,
-    **kwargs,
-) -> Optional[str]:
-
-    model = (
-        os.getenv("HF_MUSIC_MODEL")
-        or "facebook/musicgen-small"
-    )
-
-    provider = os.getenv(
-        "HF_MUSIC_PROVIDER",
-        os.getenv("HF_AUDIO_PROVIDER", "auto"),
-    )
-
-    client = _hf_client(provider)
-
-    output = Path(
-        output_path
-        or OUTPUT_DIR / "music-huggingface.wav"
-    )
-
-    output.parent.mkdir(parents=True, exist_ok=True)
-
-    # Music generation support differs between
-    # Hugging Face providers/models.
-    # Keep the call isolated so MediaRouter can
-    # safely fall through to the next provider.
-    result = client.text_to_audio(
-        prompt,
-        model=model,
-    )
-
-    if result is None:
-        raise RuntimeError(
-            "Hugging Face Music returned no audio"
-        )
-
-    if isinstance(result, bytes):
-        output.write_bytes(result)
-        return str(output)
-
-    if hasattr(result, "tobytes"):
-        output.write_bytes(result.tobytes())
-        return str(output)
-
-    raise RuntimeError(
-        f"Unsupported Hugging Face Music response: "
-        f"{type(result).__name__}"
     )
 
 
@@ -435,5 +446,4 @@ TTS_PROVIDERS = {
 MUSIC_PROVIDERS = {
     "fal_music": fal_music,
     "lyria_music": lyria_music,
-    "huggingface_musicgen": huggingface_music,
-            }
+}
