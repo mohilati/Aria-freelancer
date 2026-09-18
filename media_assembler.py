@@ -1,172 +1,109 @@
+"""
+Premium vertical media assembler.
+
+Key changes:
+- 1080x1920, 30fps.
+- Image fallback is motion-treated, but only used after video generation fails.
+- Persian narration is handled separately by persian_tts.py.
+- Original procedural suspense bed is always available as a fallback.
+- Voice is mixed above music so Persian speech stays intelligible.
+"""
+
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+from typing import List, Optional
 
-
-def _run(args):
+def _run(args: List[str]) -> None:
     subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-
-def _probe_duration(path: str) -> float:
-    result = subprocess.run(
-        [
-            "ffprobe", "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "default=noprint_wrappers=1:nokey=1",
-            path,
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
+def _duration(path: str) -> float:
+    p = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", path],
+        check=True, text=True, stdout=subprocess.PIPE,
     )
-    return float(result.stdout.strip())
+    return float(p.stdout.strip())
 
-
-def _make_image_clip(image_path: str, duration: float, output: Path):
-    # Ken Burns-style vertical still-image clip.
+def image_to_clip(image: str, output: str, seconds: float = 6.0) -> str:
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
     vf = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
         "crop=1080:1920,"
-        "zoompan=z='min(zoom+0.0007,1.08)':"
-        "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-        "d=1:s=1080x1920:fps=30,"
+        f"zoompan=z='min(zoom+0.0007,1.06)':d={int(seconds*30)}:s=1080x1920:fps=30,"
         "format=yuv420p"
     )
-    frames = max(1, int(round(duration * 30)))
-    vf = vf.replace("d=1:", f"d={frames}:")
     _run([
-        "ffmpeg", "-y",
-        "-loop", "1",
-        "-i", image_path,
-        "-t", str(duration),
-        "-vf", vf,
-        "-an",
-        "-r", "30",
-        str(output),
+        "ffmpeg", "-y", "-loop", "1", "-i", image,
+        "-t", str(seconds), "-vf", vf,
+        "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+        output,
     ])
-
-
-def _normalize_video(video_path: str, duration: float, output: Path):
-    _run([
-        "ffmpeg", "-y",
-        "-i", video_path,
-        "-t", str(duration),
-        "-vf",
-        "scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920,fps=30,format=yuv420p",
-        "-an",
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", "22",
-        str(output),
-    ])
-
-
-def _make_voice_track(voices, output: Path):
-    valid = [p for p in voices if p and Path(p).exists()]
-    if not valid:
-        return None
-
-    concat_file = output.with_suffix(".txt")
-    concat_file.write_text(
-        "".join(f"file '{Path(p).resolve()}'\n" for p in valid),
-        encoding="utf-8",
-    )
-    _run([
-        "ffmpeg", "-y",
-        "-f", "concat",
-        "-safe", "0",
-        "-i", str(concat_file),
-        "-c:a", "libmp3lame",
-        "-b:a", "128k",
-        str(output),
-    ])
-    concat_file.unlink(missing_ok=True)
     return output
 
+def concat_video(clips: List[str], output: str) -> str:
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        list_path = f.name
+        for clip in clips:
+            f.write(f"file '{Path(clip).resolve()}'\n")
+    try:
+        _run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path,
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+            "-r", "30", "-pix_fmt", "yuv420p",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+            output,
+        ])
+    finally:
+        Path(list_path).unlink(missing_ok=True)
+    return output
 
-def assemble_video(scene_assets, music_path, output_path, aspect_ratio="9:16"):
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    work = output_path.parent / "_render"
-    if work.exists():
-        shutil.rmtree(work)
-    work.mkdir(parents=True)
+def concat_audio(tracks: List[str], output: str) -> str:
+    if not tracks:
+        raise ValueError("No narration tracks")
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        list_path = f.name
+        for track in tracks:
+            f.write(f"file '{Path(track).resolve()}'\n")
+    try:
+        _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path,
+              "-c:a", "libmp3lame", "-b:a", "160k", output])
+    finally:
+        Path(list_path).unlink(missing_ok=True)
+    return output
 
-    clips = []
-    voices = []
-
-    for scene in scene_assets:
-        index = scene["index"]
-        duration = float(scene["duration"])
-        clip = work / f"scene-{index:02d}.mp4"
-
-        if scene.get("video") and Path(scene["video"]).exists():
-            _normalize_video(scene["video"], duration, clip)
-        elif scene.get("image") and Path(scene["image"]).exists():
-            _make_image_clip(scene["image"], duration, clip)
-        else:
-            raise RuntimeError(f"Scene {index} has no usable visual asset.")
-
-        clips.append(clip)
-        if scene.get("voice") and Path(scene["voice"]).exists():
-            voices.append(scene["voice"])
-
-    concat_list = work / "concat.txt"
-    concat_list.write_text(
-        "".join(f"file '{p.resolve()}'\n" for p in clips),
-        encoding="utf-8",
+def make_suspense_bed(output: str, seconds: float) -> str:
+    # Original, synthetic sound design: no copyrighted recording.
+    filter_complex = (
+        "[0:a]volume=0.045,lowpass=f=420,afade=t=in:st=0:d=1.5,"
+        f"afade=t=out:st={max(seconds-2.0,0):.2f}:d=2[n1];"
+        "[1:a]volume=0.018,highpass=f=80,lowpass=f=2600,afade=t=in:st=0:d=2,"
+        f"afade=t=out:st={max(seconds-2.0,0):.2f}:d=2[n2];"
+        "[n1][n2]amix=inputs=2:duration=longest,loudnorm=I=-24:TP=-2:LRA=7[out]"
     )
-    base_video = work / "base.mp4"
     _run([
         "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0",
-        "-i", str(concat_list),
-        "-c", "copy",
-        str(base_video),
+        "-f", "lavfi", "-i", "sine=frequency=58:sample_rate=48000",
+        "-f", "lavfi", "-i", "anoisesrc=color=brown:sample_rate=48000",
+        "-t", str(seconds),
+        "-filter_complex", filter_complex,
+        "-map", "[out]", "-c:a", "aac", "-b:a", "128k", output,
     ])
+    return output
 
-    voice_track = _make_voice_track(voices, work / "voice.mp3")
-
-    inputs = ["-i", str(base_video)]
-    filter_parts = []
-    audio_labels = []
-
-    if music_path and Path(music_path).exists():
-        inputs += ["-stream_loop", "-1", "-i", music_path]
-        filter_parts.append("[1:a]volume=0.18[music]")
-        audio_labels.append("[music]")
-
-    if voice_track and voice_track.exists():
-        music_index = 2 if music_path and Path(music_path).exists() else 1
-        inputs += ["-i", str(voice_track)]
-        filter_parts.append(f"[{music_index}:a]volume=1.0[voice]")
-        audio_labels.append("[voice]")
-
-    if audio_labels:
-        amix = "".join(audio_labels)
-        filter_parts.append(
-            f"{amix}amix=inputs={len(audio_labels)}:duration=first:dropout_transition=2[aout]"
-        )
-
-    if audio_labels:
-        _run([
-            "ffmpeg", "-y",
-            *inputs,
-            "-filter_complex", ";".join(filter_parts),
-            "-map", "0:v:0",
-            "-map", "[aout]",
-            "-c:v", "copy",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-shortest",
-            str(output_path),
-        ])
-    else:
-        shutil.copy2(base_video, output_path)
-
-    shutil.rmtree(work, ignore_errors=True)
-    return output_path
+def mux(video: str, narration: str, music: str, output: str) -> str:
+    _run([
+        "ffmpeg", "-y",
+        "-i", video, "-i", narration, "-i", music,
+        "-filter_complex",
+        "[1:a]volume=1.0[narr];[2:a]volume=0.16[mus];"
+        "[narr][mus]amix=inputs=2:duration=longest:dropout_transition=2,"
+        "loudnorm=I=-16:TP=-1.5:LRA=8[a]",
+        "-map", "0:v:0", "-map", "[a]",
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        "-shortest", "-movflags", "+faststart", output,
+    ])
+    return output
