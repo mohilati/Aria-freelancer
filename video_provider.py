@@ -11,19 +11,8 @@ OUTPUT_DIR = Path(os.getenv("ARIA_OUTPUT_DIR", "outputs"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _hf_token() -> Optional[str]:
-    return (
-        os.getenv("HF_TOKEN")
-        or os.getenv("HF_TOKEN_1")
-        or os.getenv("HUGGINGFACEHUB_API_TOKEN")
-    )
-
-
 def _save(data: bytes, output_path: Optional[str]) -> str:
-    path = Path(
-        output_path
-        or OUTPUT_DIR / f"video-{time.time_ns()}.mp4"
-    )
+    path = Path(output_path or OUTPUT_DIR / f"video-{time.time_ns()}.mp4")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return str(path)
@@ -36,12 +25,76 @@ def _download(url: str, output_path: Optional[str]) -> str:
         return _save(response.content, output_path)
 
 
+def krea_video(
+    prompt: str,
+    output_path: Optional[str] = None,
+    **kwargs,
+) -> Optional[str]:
+    """Krea Kling 3.0 direct REST API."""
+    key = os.getenv("KREA_API_KEY") or os.getenv("KREA_API_TOKEN")
+    if not key:
+        raise RuntimeError("KREA_API_KEY/KREA_API_TOKEN is not configured")
+
+    model = kwargs.get("model") or os.getenv(
+        "KREA_VIDEO_MODEL",
+        "kling/kling-3.0",
+    )
+    endpoint = f"https://api.krea.ai/generate/video/{model}"
+
+    payload = {
+        "prompt": prompt,
+        "aspect_ratio": kwargs.get("aspect_ratio", "9:16"),
+        "duration": int(kwargs.get("duration", 5)),
+    }
+
+    with httpx.Client(timeout=180, follow_redirects=True) as client:
+        response = client.post(
+            endpoint,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        response.raise_for_status()
+        job = response.json()
+
+        job_id = job.get("job_id")
+        if not job_id:
+            raise RuntimeError(f"Krea video response has no job_id: {job}")
+
+        for _ in range(180):
+            status = client.get(
+                f"https://api.krea.ai/jobs/{job_id}",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+            status.raise_for_status()
+            data = status.json()
+
+            if data.get("status") == "completed":
+                urls = (data.get("result") or {}).get("urls") or []
+                if urls:
+                    return _download(str(urls[0]), output_path)
+                raise RuntimeError("Krea video completed without result URL")
+
+            if data.get("status") in {"failed", "canceled"}:
+                raise RuntimeError(f"Krea video job {data.get('status')}")
+
+            time.sleep(5)
+
+    raise TimeoutError("Krea video generation timed out")
+
+
 def huggingface_video(
     prompt: str,
     output_path: Optional[str] = None,
     **kwargs,
 ) -> Optional[str]:
-    token = _hf_token()
+    token = (
+        os.getenv("HF_TOKEN")
+        or os.getenv("HF_TOKEN_1")
+        or os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    )
     if not token:
         raise RuntimeError("HF token is not configured")
 
@@ -68,9 +121,7 @@ def huggingface_video(
     if isinstance(video, bytearray):
         return _save(bytes(video), output_path)
 
-    raise RuntimeError(
-        f"Unexpected HF video response: {type(video).__name__}"
-    )
+    raise RuntimeError(f"Unexpected HF video response: {type(video).__name__}")
 
 
 def fal_video(
@@ -78,7 +129,8 @@ def fal_video(
     output_path: Optional[str] = None,
     **kwargs,
 ) -> Optional[str]:
-    if not os.getenv("FAL_KEY"):
+    key = os.getenv("FAL_KEY")
+    if not key:
         raise RuntimeError("FAL_KEY is not configured")
 
     import fal_client
@@ -92,7 +144,7 @@ def fal_video(
         model,
         arguments={
             "prompt": prompt,
-            "aspect_ratio": kwargs.get("aspect_ratio", "16:9"),
+            "aspect_ratio": kwargs.get("aspect_ratio", "9:16"),
         },
         with_logs=False,
     )
@@ -152,9 +204,7 @@ def replicate_video(
                 raise RuntimeError("Replicate returned no usable video")
 
             if data.get("status") in {"failed", "canceled"}:
-                raise RuntimeError(
-                    f"Replicate video failed: {data.get('error')}"
-                )
+                raise RuntimeError(f"Replicate video failed: {data.get('error')}")
 
             time.sleep(5)
 
@@ -162,6 +212,7 @@ def replicate_video(
 
 
 VIDEO_PROVIDERS = {
+    "krea_video": krea_video,
     "huggingface_video": huggingface_video,
     "fal_video": fal_video,
     "replicate_video": replicate_video,

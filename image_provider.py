@@ -33,6 +33,92 @@ def _download(url: str, suffix: str = ".png") -> str:
         return _save(response.content, suffix)
 
 
+def krea_image(prompt: str, **kwargs: Any) -> Optional[str]:
+    """Krea 2 direct REST API: reliable image path for clinic ads."""
+    key = os.getenv("KREA_API_KEY") or os.getenv("KREA_API_TOKEN")
+    if not key:
+        raise RuntimeError("KREA_API_KEY/KREA_API_TOKEN is not configured")
+
+    model = kwargs.get("model") or os.getenv(
+        "KREA_IMAGE_MODEL",
+        "krea-2/medium",
+    )
+    endpoint = f"https://api.krea.ai/generate/image/krea/{model}"
+
+    payload = {
+        "prompt": prompt,
+        "aspect_ratio": kwargs.get("aspect_ratio", "9:16"),
+        "resolution": kwargs.get("resolution", "1K"),
+        "creativity": kwargs.get("creativity", "low"),
+    }
+
+    with httpx.Client(timeout=120, follow_redirects=True) as client:
+        response = client.post(
+            endpoint,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        response.raise_for_status()
+        job = response.json()
+
+        job_id = job.get("job_id")
+        if not job_id:
+            raise RuntimeError(f"Krea image response has no job_id: {job}")
+
+        for _ in range(100):
+            status = client.get(
+                f"https://api.krea.ai/jobs/{job_id}",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+            status.raise_for_status()
+            data = status.json()
+
+            if data.get("status") == "completed":
+                urls = (data.get("result") or {}).get("urls") or []
+                if urls:
+                    return _download(str(urls[0]), ".png")
+                raise RuntimeError("Krea image completed without result URL")
+
+            if data.get("status") in {"failed", "canceled"}:
+                raise RuntimeError(f"Krea image job {data.get('status')}")
+
+            time.sleep(3)
+
+    raise TimeoutError("Krea image generation timed out")
+
+
+def pollinations_image(prompt: str, **kwargs: Any) -> Optional[str]:
+    """Pollinations image endpoint using the current gen.pollinations.ai API."""
+    key = os.getenv("POLLINATIONS_API_KEY")
+    if not key:
+        raise RuntimeError("POLLINATIONS_API_KEY is not configured")
+
+    from urllib.parse import quote
+
+    model = kwargs.get("model") or os.getenv("POLLINATIONS_IMAGE_MODEL", "flux")
+    encoded = quote(prompt, safe="")
+    url = f"https://gen.pollinations.ai/image/{encoded}"
+
+    params = {
+        "model": model,
+        "width": int(kwargs.get("width", 1024)),
+        "height": int(kwargs.get("height", 1536)),
+        "nologo": "true",
+    }
+
+    with httpx.Client(timeout=300, follow_redirects=True) as client:
+        response = client.get(
+            url,
+            params=params,
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        response.raise_for_status()
+        return _save(response.content, ".png")
+
+
 def huggingface_image(prompt: str, **kwargs: Any) -> Optional[str]:
     token = _hf_token()
     if not token:
@@ -76,7 +162,7 @@ def fal_image(prompt: str, **kwargs: Any) -> Optional[str]:
         model,
         arguments={
             "prompt": prompt,
-            "image_size": kwargs.get("image_size", "square_hd"),
+            "image_size": kwargs.get("image_size", "portrait_4_3"),
             "num_images": 1,
         },
         with_logs=False,
@@ -133,9 +219,7 @@ def replicate_image(prompt: str, **kwargs: Any) -> Optional[str]:
                 raise RuntimeError("Replicate returned no image output")
 
             if data.get("status") in {"failed", "canceled"}:
-                raise RuntimeError(
-                    f"Replicate image failed: {data.get('error')}"
-                )
+                raise RuntimeError(f"Replicate image failed: {data.get('error')}")
 
             time.sleep(3)
 
@@ -143,6 +227,8 @@ def replicate_image(prompt: str, **kwargs: Any) -> Optional[str]:
 
 
 IMAGE_PROVIDERS = {
+    "krea_image": krea_image,
+    "pollinations_image": pollinations_image,
     "huggingface_image": huggingface_image,
     "fal_image": fal_image,
     "replicate_image": replicate_image,
