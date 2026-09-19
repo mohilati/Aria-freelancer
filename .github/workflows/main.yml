@@ -65,11 +65,13 @@ jobs:
 
           SUNO_API_BASE_URL: https://api.sunoapi.org
 
-          ARIA_IMAGE_CHAIN: pollinations_image,krea_image,kie_image,pixazo_image,huggingface_image,fal_image,replicate_image
-          ARIA_VIDEO_CHAIN: pollinations_video,krea_video,kie_video,pixazo_video,huggingface_video,fal_video,replicate_video
-          ARIA_TTS_CHAIN: elevenlabs_tts,huggingface_tts
+          ARIA_IMAGE_CHAIN: krea_image,pollinations_image,huggingface_image,fal_image,replicate_image
+          ARIA_VIDEO_CHAIN: krea_video,huggingface_video,fal_video,replicate_video
+          ARIA_TTS_CHAIN: persian_edge_tts,elevenlabs_tts,huggingface_tts
           ARIA_MUSIC_CHAIN: suno_music,kie_music,pollinations_audio,fal_music
 
+          ARIA_VISUAL_QA: "1"
+          ARIA_VISUAL_QA_MIN_SCORE: "70"
           ARIA_OUTPUT_DIR: outputs
           ARIA_PROVIDER_STATE: outputs/.aria_provider_usage.json
 
@@ -83,6 +85,6 @@ jobs:
           git add jobs outputs
 
           if ! git diff --cached --quiet; then
-            git commit -m "feat: generate approved media jobs"
+            git commit -m "fix: harden clinic media pipeline"
             git push
           fi
