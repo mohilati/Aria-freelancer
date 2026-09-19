@@ -172,10 +172,12 @@ def _make_silent_audio(
 
 def _concat_clips(clips: list[Path], output_path: Path) -> None:
     concat_file = output_path.parent / ".aria_concat.txt"
-    concat_file.write_text(
-        "".join(f"file '{str(p.resolve()).replace(chr(39), \"'\\\\''\")}'\n" for p in clips),
-        encoding="utf-8",
-    )
+    lines = []
+    for clip in clips:
+        safe_path = str(clip.resolve()).replace("'", "'\\''")
+        lines.append(f"file '{safe_path}'")
+    concat_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
     try:
         _run(
             [
