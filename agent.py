@@ -106,13 +106,16 @@ Return ONLY valid JSON:
 Requirements:
 - Persian narration and Persian on-screen text.
 - Visual prompts in English.
-- For a clinic advertisement, use realistic professional dermatology environments.
-- Keep one main adult client visually consistent across scenes.
-- Natural skin texture and realistic human anatomy.
+- For a clinic advertisement, use simple, photorealistic commercial shots.
+- Keep one adult female client visually consistent, but do NOT force the same person into every B-roll shot.
+- Prefer one clear subject or one clear object per scene.
+- Avoid complex hand gestures, multiple people, tablets, instruments and face-touching unless essential.
+- Natural skin texture, realistic anatomy, realistic clinic lighting.
 - No diagnosis, guaranteed treatment or unsupported medical claims.
-- Do not put text/logos inside generated images.
-- Keep on-screen text short.
-- Use 7 scenes for this test when practical.
+- Never put text/logos inside generated images.
+- Keep on-screen text short and add it later during assembly.
+- Use 7 scenes.
+- Scene types should be easy for an image/video model: exterior/lobby, portrait consultation, clean product/object close-up, calm treatment-room wide shot, skincare detail, relaxing clinic atmosphere, final premium portrait.
 - Music must be original instrumental suspense, no vocals.
 
 APPROVED PLAN:
@@ -141,9 +144,10 @@ def produce_media(job, job_id, plan, content):
 
     continuity = {
         "appearance": (
-            "same adult Persian/Middle Eastern female client, "
-            "natural facial proportions, medium-length dark hair, "
-            "neutral elegant clinic clothing, realistic skin texture"
+            "adult female client, natural facial proportions, "
+            "medium-length dark hair, neutral elegant clinic clothing, "
+            "realistic skin texture; keep identity consistent only "
+            "when the scene contains the client"
         )
     }
     reference_note = str(job.get("reference_note") or "")
@@ -172,7 +176,7 @@ def produce_media(job, job_id, plan, content):
                 scene=scene,
                 continuity=continuity,
                 real_reference_note=reference_note,
-                qa_attempts=3,
+                qa_attempts=2,
             )
             if image.ok and image.output_path:
                 image_path = image.output_path
@@ -320,12 +324,22 @@ def process(job_file):
         raise RuntimeError("Content did not reach an approved review state.")
 
     print("[Media] Content approved. Starting actual media production.")
-    final_video, media_manifest = produce_media(
-        job=job,
-        job_id=job_id,
-        plan=plan,
-        content=result,
-    )
+    try:
+        final_video, media_manifest = produce_media(
+            job=job,
+            job_id=job_id,
+            plan=plan,
+            content=result,
+        )
+    except Exception as exc:
+        job["status"] = "media_failed"
+        job["media_error"] = f"{type(exc).__name__}: {exc}"
+        job["review_history"] = review_history
+        job_file.write_text(
+            json.dumps(job, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        raise
 
     output_file = OUT / f"{job_id}.md"
     output_file.write_text(
@@ -382,14 +396,20 @@ def process(job_file):
 
 
 def main():
+    failures = 0
+
     for job_file in sorted(JOBS.glob("*.json")):
         try:
             process(job_file)
         except Exception as exc:
+            failures += 1
             print(
                 f"FAILED {job_file.name}: "
                 f"{type(exc).__name__}: {exc}"
             )
+
+    if failures:
+        raise SystemExit(failures)
 
 
 if __name__ == "__main__":

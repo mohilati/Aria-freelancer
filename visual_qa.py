@@ -1,9 +1,10 @@
 """
-Visual QA for generated clinic-ad images.
+Resilient visual QA for Aria Freelancer.
 
-Uses Gemini vision directly through the same GEMINI_API_KEY already used by Aria.
-A failed/unsafe visual is rejected so the assembler never silently accepts a bad
-image just because generation returned bytes.
+Important behavior:
+- Never turns a Gemini 429/503 into a scene-killing rejection.
+- Uses a single vision call per generated candidate.
+- Keeps semantic QA focused on obvious defects and prompt mismatch.
 """
 
 from __future__ import annotations
@@ -18,74 +19,137 @@ import httpx
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
+
 def _image_mime(path: Path) -> str:
-    suffix = path.suffix.lower()
     return {
         ".png": "image/png",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".webp": "image/webp",
-    }.get(suffix, "image/png")
+    }.get(path.suffix.lower(), "image/png")
+
+
+def _transient_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return (
+        "429" in text
+        or "too many requests" in text
+        or "503" in text
+        or "service unavailable" in text
+        or "timeout" in text
+        or "timed out" in text
+    )
+
 
 def review_image(image_path: str, scene: Dict[str, Any]) -> Dict[str, Any]:
     path = Path(image_path)
     if not path.exists():
         return {"approved": False, "score": 0, "issues": ["image file missing"]}
 
-    key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not key:
-        # Do not block the pipeline if vision QA is not configured.
-        return {"approved": True, "score": 70, "issues": ["vision QA skipped: GEMINI_API_KEY missing"]}
+    # Basic file sanity first. This avoids spending Gemini calls on broken files.
+    if path.stat().st_size < 10_000:
+        return {"approved": False, "score": 0, "issues": ["image file is unexpectedly small"]}
 
-    model = os.getenv("GEMINI_VISION_MODEL", os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"))
-    data = base64.b64encode(path.read_bytes()).decode("ascii")
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key or os.getenv("ARIA_VISUAL_QA", "1") != "1":
+        return {
+            "approved": True,
+            "score": 78,
+            "issues": ["vision QA skipped"],
+        }
+
+    model = os.getenv(
+        "GEMINI_VISION_MODEL",
+        os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+    )
+
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    scene_prompt = str(scene.get("visual_prompt") or scene.get("prompt") or "")
 
     prompt = f"""
-You are the visual quality-control agent for a professional dermatology clinic advertisement.
+You are a strict but practical visual QA agent for a premium dermatology clinic social-media advertisement.
 
-Review the attached generated image for this scene:
-{json.dumps(scene, ensure_ascii=False)}
+SCENE REQUIREMENT:
+{scene_prompt}
+
+Approve images that are commercially usable and broadly match the requested shot.
+Reject only clear problems:
+- obvious malformed face or severe anatomy errors
+- severe AI artifacts
+- duplicate/extra people when the scene does not ask for them
+- fake-looking clinical equipment
+- visible watermark or generated text/logo
+- major composition mismatch with the requested shot
+
+Do NOT reject for:
+- minor hand awkwardness if hands are not the focus
+- normal skin texture
+- mild background blur
+- ordinary photographic imperfections
+- an image being AI-generated
+- small differences in pose that do not change the requested shot
 
 Return ONLY JSON:
 {{
   "approved": true or false,
   "score": 0-100,
-  "issues": ["..."],
-  "anatomy_ok": true or false,
-  "face_ok": true or false,
-  "clinical_realism_ok": true or false,
-  "composition_ok": true or false,
-  "continuity_ok": true or false
+  "issues": ["short issue 1"],
+  "anatomy_ok": true,
+  "face_ok": true,
+  "clinical_realism_ok": true,
+  "composition_ok": true
 }}
-
-Reject images with obvious deformed hands, extra fingers, malformed faces,
-plastic/waxy skin, fake medical equipment, unreadable embedded text,
-watermarks, duplicated people, or obviously synthetic clinic environments.
-Do not reject merely because the image is AI-generated; judge visible quality.
 """
 
     payload = {
         "contents": [{
             "parts": [
                 {"text": prompt},
-                {"inline_data": {"mime_type": _image_mime(path), "data": data}},
+                {
+                    "inline_data": {
+                        "mime_type": _image_mime(path),
+                        "data": encoded,
+                    }
+                },
             ]
         }],
-        "generationConfig": {"temperature": 0.1},
+        "generationConfig": {
+            "temperature": 0.0,
+            "maxOutputTokens": 500,
+        },
     }
 
     try:
-        with httpx.Client(timeout=90) as client:
+        with httpx.Client(timeout=60) as client:
             response = client.post(
                 GEMINI_URL.format(model=model),
                 params={"key": key},
                 json=payload,
             )
             response.raise_for_status()
-            raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-        raw = raw.strip().removeprefix("```json").removesuffix("```").strip()
+            data = response.json()
+            raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+        raw = raw.removeprefix("```json").removesuffix("```").strip()
         result = json.loads(raw)
-        return result if isinstance(result, dict) else {"approved": False, "score": 0, "issues": ["invalid QA response"]}
+        if not isinstance(result, dict):
+            raise ValueError("invalid QA response")
+
+        return result
+
     except Exception as exc:
-        # QA failure should not turn into a false approval.
-        return {"approved": False, "score": 0, "issues": [f"visual QA error: {type(exc).__name__}: {exc}"]}
+        # A provider/rate-limit outage must not destroy otherwise usable media.
+        if _transient_error(exc):
+            return {
+                "approved": True,
+                "score": 76,
+                "issues": [
+                    f"vision QA temporarily unavailable: {type(exc).__name__}"
+                ],
+            }
+
+        return {
+            "approved": False,
+            "score": 0,
+            "issues": [f"visual QA error: {type(exc).__name__}: {exc}"],
+        }

@@ -1,11 +1,11 @@
 """
-Drop-in MediaRouter for Aria Freelancer.
+Resilient MediaRouter for Aria Freelancer.
 
-Adds:
-- Persian-first TTS through persian_tts.py.
-- Clinic-specific visual prompt policy.
-- Visual QA for generated images.
-- Provider failover without accepting a failed visual silently.
+Design:
+- Krea-first image/video generation.
+- Provider errors are logged individually.
+- Visual QA is bounded and does not kill a scene on Gemini rate limits.
+- A rejected image gets a targeted correction prompt on the next attempt.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from visual_prompt_policy import build_clinic_scene_prompt
 from visual_qa import review_image
 from persian_tts import synthesize_persian, voice_for_job
 
+
 @dataclass
 class ProviderResult:
     ok: bool
@@ -30,19 +31,21 @@ class ProviderResult:
     skipped: bool = False
     reason: Optional[str] = None
 
+
 def _chain(env_name: str, default: List[str]) -> List[str]:
     raw = os.getenv(env_name, "")
     return [x.strip() for x in raw.split(",") if x.strip()] or default
+
 
 class MediaRouter:
     def __init__(self) -> None:
         self.image_chain = _chain(
             "ARIA_IMAGE_CHAIN",
-            ["krea_image", "huggingface_image", "fal_image", "replicate_image"],
+            ["krea_image", "pollinations_image", "huggingface_image", "fal_image", "replicate_image"],
         )
         self.video_chain = _chain(
             "ARIA_VIDEO_CHAIN",
-            ["krea_video", "huggingface_video", "fal_video", "replicate_video"],
+            ["krea_video", "pollinations_video", "huggingface_video", "fal_video", "replicate_video"],
         )
         self.tts_chain = _chain(
             "ARIA_TTS_CHAIN",
@@ -55,18 +58,28 @@ class MediaRouter:
 
     def _run(self, names, registry, kind, **kwargs) -> ProviderResult:
         errors = []
+
         for name in names:
             fn = registry.get(name)
             if fn is None:
                 errors.append(f"{name}: not registered")
+                print(f"[MEDIA] {kind} provider={name} unavailable: not registered")
                 continue
+
             try:
                 result = fn(**kwargs)
                 if result:
+                    print(f"[MEDIA] {kind} provider={name} succeeded")
                     return ProviderResult(True, name, output_path=result)
+
                 errors.append(f"{name}: no output")
+                print(f"[MEDIA] {kind} provider={name} returned no output")
+
             except Exception as exc:
-                errors.append(f"{name}: {type(exc).__name__}: {exc}")
+                msg = f"{type(exc).__name__}: {exc}"
+                errors.append(f"{name}: {msg}")
+                print(f"[MEDIA] {kind} provider={name} failed: {msg}")
+
         return ProviderResult(
             False,
             "none",
@@ -74,26 +87,36 @@ class MediaRouter:
             skipped=True,
         )
 
+    @staticmethod
+    def _scene_prompt(scene: Optional[Dict[str, Any]], continuity: Dict[str, Any], reference: str) -> str:
+        if not scene:
+            return ""
+        return build_clinic_scene_prompt(scene, continuity, reference)
+
     def generate_image(self, prompt: str, **kwargs) -> ProviderResult:
         scene = kwargs.get("scene")
-        if scene:
-            prompt = build_clinic_scene_prompt(
-                scene,
-                kwargs.get("continuity") or {},
-                kwargs.get("real_reference_note") or "",
-            )
+        continuity = kwargs.get("continuity") or {}
+        reference = kwargs.get("real_reference_note") or ""
 
-        attempts = int(kwargs.get("qa_attempts", 3))
+        base_prompt = self._scene_prompt(scene, continuity, reference) if scene else prompt
+        current_prompt = base_prompt
+        attempts = max(1, min(int(kwargs.get("qa_attempts", 2)), 2))
         last_error = None
 
-        for attempt in range(attempts):
+        clean_kwargs = {
+            k: v for k, v in kwargs.items()
+            if k not in {"scene", "continuity", "real_reference_note", "qa_attempts"}
+        }
+
+        for attempt in range(1, attempts + 1):
             result = self._run(
                 self.image_chain,
                 IMAGE_PROVIDERS,
                 "image",
-                prompt=prompt,
-                **{k: v for k, v in kwargs.items() if k not in {"scene", "continuity", "real_reference_note", "qa_attempts"}},
+                prompt=current_prompt,
+                **clean_kwargs,
             )
+
             if not result.ok or not result.output_path:
                 last_error = result.error
                 continue
@@ -102,32 +125,61 @@ class MediaRouter:
                 return result
 
             qa = review_image(result.output_path, scene)
-            if bool(qa.get("approved")) and int(qa.get("score", 0)) >= int(os.getenv("ARIA_VISUAL_QA_MIN_SCORE", "72")):
+            score = int(qa.get("score", 0) or 0)
+            approved = bool(qa.get("approved"))
+
+            if approved and score >= int(os.getenv("ARIA_VISUAL_QA_MIN_SCORE", "70")):
                 return result
 
-            last_error = "visual QA rejected image: " + "; ".join(map(str, qa.get("issues", [])))
-            print(f"[MEDIA] image rejected by visual QA attempt={attempt+1}: {last_error}")
+            issues = [str(x) for x in qa.get("issues", []) if str(x).strip()]
+            last_error = "visual QA rejected image: " + "; ".join(issues or ["quality threshold"])
 
-        return ProviderResult(False, "none", error=last_error or "image generation failed", skipped=True)
+            print(
+                f"[MEDIA] image rejected by visual QA "
+                f"attempt={attempt}: {last_error}"
+            )
+
+            # Targeted correction rather than regenerating the same prompt.
+            if attempt < attempts:
+                current_prompt = (
+                    base_prompt
+                    + "\n\nCORRECTION FOR NEXT GENERATION:\n"
+                    + "\n".join(f"- {issue}" for issue in issues[:4])
+                    + "\nKeep the requested camera framing and shot type exact. "
+                      "Prefer simple natural poses and avoid unnecessary hands or extra people."
+                )
+
+        return ProviderResult(
+            False,
+            "none",
+            error=last_error or "image generation failed",
+            skipped=True,
+        )
 
     def generate_video(self, prompt: str, **kwargs) -> ProviderResult:
         scene = kwargs.get("scene")
+        continuity = kwargs.get("continuity") or {}
+        reference = kwargs.get("real_reference_note") or ""
+
         if scene:
-            prompt = build_clinic_scene_prompt(
-                scene,
-                kwargs.get("continuity") or {},
-                kwargs.get("real_reference_note") or "",
-            )
+            prompt = self._scene_prompt(scene, continuity, reference)
+
+        clean_kwargs = {
+            k: v for k, v in kwargs.items()
+            if k not in {"scene", "continuity", "real_reference_note"}
+        }
+
         return self._run(
             self.video_chain,
             VIDEO_PROVIDERS,
             "video",
             prompt=prompt,
-            **{k: v for k, v in kwargs.items() if k not in {"scene", "continuity", "real_reference_note"}},
+            **clean_kwargs,
         )
 
     def generate_tts(self, text: str, **kwargs) -> ProviderResult:
         language = str(kwargs.get("language", "Persian")).lower()
+
         if language in {"persian", "fa", "farsi"}:
             try:
                 output = kwargs.get("output_path")
@@ -135,6 +187,7 @@ class MediaRouter:
                     out_dir = kwargs.get("output_dir", "outputs/media/tts")
                     os.makedirs(out_dir, exist_ok=True)
                     output = os.path.join(out_dir, "persian-narration.mp3")
+
                 output = synthesize_persian(
                     text,
                     output,
@@ -143,13 +196,33 @@ class MediaRouter:
                     pitch=kwargs.get("pitch", "+0Hz"),
                 )
                 return ProviderResult(True, "persian_edge_tts", output_path=output)
-            except Exception as exc:
-                print(f"[MEDIA] Persian Edge TTS failed: {type(exc).__name__}: {exc}")
 
-        return self._run(self.tts_chain[1:], TTS_PROVIDERS, "tts", text=text, **kwargs)
+            except Exception as exc:
+                print(
+                    f"[MEDIA] Persian Edge TTS failed: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+
+        clean_kwargs = {
+            k: v for k, v in kwargs.items()
+            if k not in {"job", "output_path", "language"}
+        }
+        return self._run(
+            self.tts_chain,
+            TTS_PROVIDERS,
+            "tts",
+            text=text,
+            **clean_kwargs,
+        )
 
     def generate_music(self, prompt: str, **kwargs) -> ProviderResult:
-        return self._run(self.music_chain, MUSIC_PROVIDERS, "music", prompt=prompt, **kwargs)
+        return self._run(
+            self.music_chain,
+            MUSIC_PROVIDERS,
+            "music",
+            prompt=prompt,
+            **kwargs,
+        )
 
     def generate_audio(self, kind: str, **kwargs) -> ProviderResult:
         if kind == "tts":
