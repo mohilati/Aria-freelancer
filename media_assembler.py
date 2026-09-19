@@ -328,8 +328,6 @@ def _find_media_path(item: Any) -> str | None:
         return item
     if isinstance(item, dict):
         for key in (
-            "video",
-            "image",
             "path",
             "file",
             "file_path",
@@ -395,18 +393,11 @@ def assemble_video(
     clips: list[Path] = []
     try:
         requested_total = float(target_duration) if target_duration else 48.0
+        per_scene = requested_total / len(usable)
 
         for idx, asset in enumerate(usable):
             clip = temp_dir / f"scene_{idx + 1:02d}.mp4"
             suffix = asset.suffix.lower()
-
-            scene_duration = None
-            if isinstance(scene_assets[idx], dict):
-                try:
-                    scene_duration = float(scene_assets[idx].get("duration"))
-                except (TypeError, ValueError):
-                    scene_duration = None
-            duration = scene_duration or (requested_total / len(usable))
 
             if suffix in {".mp4", ".mov", ".webm", ".mkv"}:
                 # Normalize video assets to the same canvas/fps.
@@ -417,7 +408,7 @@ def assemble_video(
                         "-i",
                         str(asset),
                         "-t",
-                        f"{duration:.3f}",
+                        f"{per_scene:.3f}",
                         "-vf",
                         (
                             f"scale={width}:{height}:"
