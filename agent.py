@@ -106,17 +106,24 @@ Return ONLY valid JSON:
 Requirements:
 - Persian narration and Persian on-screen text.
 - Visual prompts in English.
-- For a clinic advertisement, use simple, photorealistic commercial shots.
-- Keep one adult female client visually consistent, but do NOT force the same person into every B-roll shot.
-- Prefer one clear subject or one clear object per scene.
-- Avoid complex hand gestures, multiple people, tablets, instruments and face-touching unless essential.
-- Natural skin texture, realistic anatomy, realistic clinic lighting.
-- No diagnosis, guaranteed treatment or unsupported medical claims.
-- Never put text/logos inside generated images.
-- Keep on-screen text short and add it later during assembly.
-- Use 7 scenes.
-- Scene types should be easy for an image/video model: exterior/lobby, portrait consultation, clean product/object close-up, calm treatment-room wide shot, skincare detail, relaxing clinic atmosphere, final premium portrait.
-- Music must be original instrumental suspense, no vocals.
+- Build the advertisement as a sequence of simple cinematic commercial shots, not a slideshow.
+- Every scene must have ONE visual idea and ONE camera action.
+- Keep the adult female client consistent only in scenes where she is visible.
+- Avoid complex hand anatomy, medical procedures, multiple people, tablets and tiny objects unless essential.
+- Prefer wide/medium compositions with clean uncluttered backgrounds.
+- Natural skin texture, realistic clinic lighting, believable premium dermatology environment.
+- Never put text, logos, labels or captions inside generated visuals.
+- On-screen text is added later during assembly.
+- Use exactly 7 scenes, each 5-9 seconds.
+- Scene 1: exterior/entrance establishing shot.
+- Scene 2: elegant reception/lobby with calm human presence.
+- Scene 3: adult female client in a natural consultation portrait.
+- Scene 4: clean skincare/product or clinic-detail B-roll with no hands.
+- Scene 5: treatment-room atmosphere, client relaxed, no active procedure.
+- Scene 6: premium lifestyle close/medium shot of the client in the clinic.
+- Scene 7: final confident natural portrait + clean clinic background for CTA.
+- Prefer image-to-video only when it preserves the composition; otherwise use controlled photo motion.
+- Music must be original instrumental and remain clearly below the narration.
 
 APPROVED PLAN:
 {json.dumps(plan, ensure_ascii=False, indent=2)}
