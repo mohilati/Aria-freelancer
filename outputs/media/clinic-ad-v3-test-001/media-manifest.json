@@ -1,0 +1,122 @@
+{
+  "job_id": "clinic-ad-v3-test-001",
+  "media_plan": {
+    "title": "مراقبت تخصصی پوست در آریا فریلنسر",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 52,
+    "visual_style": "photorealistic premium dermatology commercial",
+    "music_prompt": "original instrumental suspense background, no vocals",
+    "scenes": [
+      {
+        "duration": 7,
+        "visual_prompt": "Cinematic vertical 9:16 shot of a serene, modern dermatology clinic reception area. Soft natural daylight coming through large windows, minimalist interior design with warm wooden accents and indoor plants. A welcoming, elegant atmosphere, highly realistic, shot on 35mm lens, photorealistic, 8k.",
+        "on_screen_text": "لحظه‌ای برای خودتان",
+        "narration": "لحظه‌ای برای خودتان؛ جایی که مراقبت از پوست، یک تجربه آرامش‌بخش است."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Close-up vertical 9:16 shot of a professional female aesthetician in clean medical uniform, warmly consulting a client in a bright, modern treatment room. Real skin texture, natural lighting, professional and empathetic expression, photorealistic, 4k.",
+        "on_screen_text": "مراقبت تخصصی و اصولی",
+        "narration": "در کلینیک تخصصی ما، هر مسیر مراقبتی با دقت و متناسب با نیاز منحصر‌به‌فرد پوست شما طراحی می‌شود."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Vertical 9:16 medium shot of a well-organized, pristine dermatology treatment room. Advanced yet non-intimidating skin care equipment in the background, soft warm ambient lighting, peaceful mood, high realism.",
+        "on_screen_text": "مسیر اختصاصی پوست شما",
+        "narration": "از مشاوره تخصصی تا مراقبت‌های اصولی..."
+      },
+      {
+        "duration": 8,
+        "visual_prompt": "Close-up vertical 9:16 shot of a relaxed client receiving a gentle facial skin treatment. Natural, healthy skin texture without heavy retouching, soft and soothing lighting, peaceful facial expression.",
+        "on_screen_text": "بازگشت شادابی و سلامت",
+        "narration": "...همه‌چیز برای بازگشت شادابی و سلامت طبیعی پوست شما آماده است."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Vertical 9:16 shot of a professional medical team member smiling gently in a bright, modern clinic hallway. Natural lighting, authentic and trustworthy appearance, professional attire, photorealistic.",
+        "on_screen_text": "فضایی آرام و حرفه‌ای",
+        "narration": "فضایی آرام، تیمی حرفه‌ای..."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Vertical 9:16 aesthetic shot of natural skincare products neatly arranged on a clean marble surface with soft shadows and minimal green leaves, warm and luxurious mood, high detail.",
+        "on_screen_text": "توجهی که پوست شما سزاوار آن است",
+        "narration": "...و توجهی که پوست شما سزاوار آن است."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Vertical 9:16 clean outro screen shot with a minimalist clinic logo placement area, soft warm background lighting, elegant and trustworthy design, high resolution.",
+        "on_screen_text": "مشاوره تخصصی در دایرکت",
+        "narration": "برای دریافت مشاوره تخصصی پوست، از طریق دایرکت با ما در ارتباط باشید."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-b111d77e80ef494f8c69c0bc50be96a3.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-01.mp3",
+      "text": "لحظه‌ای برای خودتان"
+    },
+    {
+      "index": 2,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/image-6aba47a4771d4700a4d9ea6e77e98e22.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-02.mp3",
+      "text": "مراقبت تخصصی و اصولی"
+    },
+    {
+      "index": 3,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/image-cdf170e34311470090a69ffc85d3647b.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-03.mp3",
+      "text": "مسیر اختصاصی پوست شما"
+    },
+    {
+      "index": 4,
+      "duration": 8.0,
+      "video": null,
+      "image": "outputs/image-4d09a5a37fe446beb2960b27dc0ef2d0.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-04.mp3",
+      "text": "بازگشت شادابی و سلامت"
+    },
+    {
+      "index": 5,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-6eb925e48c7a4d0fb0a6e1dc7e623342.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-05.mp3",
+      "text": "فضایی آرام و حرفه‌ای"
+    },
+    {
+      "index": 6,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-771a6265bb72408eb513ae85712ee550.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-06.mp3",
+      "text": "توجهی که پوست شما سزاوار آن است"
+    },
+    {
+      "index": 7,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-8e5f0747a98f4698a8ff5a95c2aa209f.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v3-test-001/narration-scene-07.mp3",
+      "text": "مشاوره تخصصی در دایرکت"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "error": "music providers exhausted: suno_music: RuntimeError: Suno integration is intentionally not auto-configured because current API requires a public callback URL | kie_music: not registered | pollinations_audio: not registered | fal_music: not registered",
+    "skipped": true,
+    "reason": null
+  },
+  "final_video": "outputs/media/clinic-ad-v3-test-001/clinic-ad-v3-test-001.mp4",
+  "failures": []
+}

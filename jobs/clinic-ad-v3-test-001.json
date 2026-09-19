@@ -1,6 +1,6 @@
 {
   "id": "clinic-ad-v3-test-001",
-  "status": "pending",
+  "status": "completed",
   "brief": "برای یک مرکز پوست و زیبایی، یک ویدیوی تبلیغاتی عمودی برای اینستاگرام بساز. تمرکز ویدئو روی حس اعتماد، محیط حرفه‌ای کلینیک، مراقبت از پوست و تجربه آرام مراجعه‌کننده باشد. ویدئو باید طبیعی و واقع‌گرایانه باشد و شبیه تبلیغ حرفه‌ای یک کلینیک واقعی به نظر برسد.",
   "platform": "Instagram",
   "language": "Persian",
@@ -41,5 +41,48 @@
     "target_duration_seconds": 50,
     "visual_style": "photorealistic premium dermatology commercial",
     "reference_images": []
-  }
+  },
+  "content_plan": {
+    "content_goal": "معرفی حرفه‌ای مرکز پوست و زیبایی با تمرکز بر حس اعتماد، محیط آرام و مراقبت اصولی از پوست",
+    "audience_angle": "بزرگسالانی که به دنبال یک فضای امن، تخصصی و آرام برای رسیدگی به سلامت و شادابی پوست خود هستند",
+    "core_message": "زیبایی طبیعی شما با مراقبت‌های تخصصی، در محیطی آرام و حرفه‌ای آغاز می‌شود.",
+    "content_pillars": [
+      "محیط و فضای کلینیک",
+      "تخصص و مراقبت‌های اصولی",
+      "تجربه آرامش و رضایت مراجعه‌کننده"
+    ],
+    "formats": [
+      "ویدیوی ریلز عمودی (9:16)"
+    ],
+    "hooks": [
+      "لحظه‌ای برای خودتان؛ جایی که مراقبت از پوست، یک تجربه آرامش‌بخش است.",
+      "پوست سالم، نتیجه یک مسیر تخصصی و اصولی است.",
+      "فضایی آرام، تیمی حرفه‌ای؛ برای مراقبت از آنچه برایتان ارزشمند است."
+    ],
+    "call_to_action": "برای دریافت مشاوره تخصصی پوست، از طریق دایرکت با ما در ارتباط باشید.",
+    "calendar": [
+      {
+        "day": 1,
+        "topic": "معرفی فضای آرام کلینیک و رویکرد تخصصی مراقبت از پوست",
+        "format": "ویدیوی ریلز عمودی (9:16)",
+        "hook": "لحظه‌ای برای خودتان؛ جایی که مراقبت از پوست، یک تجربه آرامش‌بخش است."
+      }
+    ],
+    "planner": "aria-content-planner-v1"
+  },
+  "review_history": [
+    {
+      "status": "approved",
+      "score": 100,
+      "issues": [],
+      "missing_deliverables": [],
+      "revision_instructions": [],
+      "reviewer": "aria-review-agent-v1",
+      "attempt": 1,
+      "round": 1
+    }
+  ],
+  "final_video": "outputs/media/clinic-ad-v3-test-001/clinic-ad-v3-test-001.mp4",
+  "media_manifest": "outputs/media/clinic-ad-v3-test-001/media-manifest.json",
+  "output": "outputs/clinic-ad-v3-test-001.md"
 }
