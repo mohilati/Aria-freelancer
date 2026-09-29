@@ -1,0 +1,15 @@
+{
+  "aspect_ratio": "9:16",
+  "resolution": "1080x1920",
+  "fps": 30,
+  "scene_count": 4,
+  "requested_duration": 48.0,
+  "narration": false,
+  "music": false,
+  "scene_durations": [
+    7.0,
+    7.0,
+    7.0,
+    7.0
+  ]
+}

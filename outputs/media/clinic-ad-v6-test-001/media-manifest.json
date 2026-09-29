@@ -1,0 +1,114 @@
+{
+  "job_id": "clinic-ad-v6-test-001",
+  "media_plan": {
+    "title": "معرفی حرفه‌ای مرکز پوست و زیبایی",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 47,
+    "visual_style": "photorealistic premium dermatology commercial",
+    "music_prompt": "original instrumental suspense background, no vocals",
+    "scenes": [
+      {
+        "duration": 7,
+        "visual_prompt": "A high-end modern dermatology clinic reception lounge, minimalist Scandinavian luxury aesthetic, beige and soft warm wood tones, soft indirect sunlight through sheer curtains, subtle indoor green plants, photorealistic, cinematic atmosphere, shot on 35mm lens, 8k resolution, vertical 9:16 ratio --no text, logo, blurry, smooth plastic look",
+        "on_screen_text": "محیطی آرام و استاندارد",
+        "narration": "پوست شما شایسته مراقبتی علمی و در محیطی کاملاً آرام است."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Professional female dermatologist in a clean white medical coat talking attentively to a relaxed female client in a brightly lit aesthetic consultation room, warm welcoming environment, realistic human skin texture with pores, natural soft lighting, photorealistic, vertical 9:16 ratio --no text, logo, plastic skin, distorted hands",
+        "on_screen_text": "مشاوره تخصصی و فردی",
+        "narration": "در مرکز ما، هر مسیر زیبایی با بررسی دقیق و مشاوره تخصصی آغاز می‌شود."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Elegant close-up shot of modern aesthetic dermatology equipment handpiece sitting cleanly on a sterile white surface, soft luxury ambient lighting, bokeh blurred background, ultra realistic detail, vertical 9:16 ratio --no text, logo, clutter, multiple hands",
+        "on_screen_text": "استانداردهای بین‌المللی و بهداشت",
+        "narration": "استفاده از استانداردهای به‌روز و محیطی کاملاً بهداشتی، اولویت اصلی ماست."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "A peaceful woman laying back comfortably during a relaxing skincare hydration session in a quiet treatment room, soft lighting, calm atmosphere, real skin texture with glowing natural tone, clean aesthetic towel, vertical 9:16 ratio --no text, logo, exaggerated expressions, fake skin",
+        "on_screen_text": "مراقبت اصولی و علمی",
+        "narration": "تجربه یک مراقبت اصولی، حس طراوت و شادابی طبیعی را به پوست شما بازمی‌گرداند."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Medium close-up shot of a serene Middle Eastern woman with fresh healthy glowing skin, soft gentle smile looking slightly off-camera, hyper-realistic face, visible soft skin texture and fine pores, warm golden window lighting, vertical 9:16 ratio --no text, logo, heavy makeup, plastic filter",
+        "on_screen_text": "حس شادابی و طراوت طبیعی",
+        "narration": "آرامش خاطر شما، ارزشمندترین نتیجه‌ای است که به آن می‌اندیشیم."
+      },
+      {
+        "duration": 7,
+        "visual_prompt": "Clean, serene hallway of a high-end skin clinic with warm wall lighting, minimal modern furniture, pristine and luxurious ambiance, photorealistic, vertical 9:16 ratio --no text, logo, crowded people",
+        "on_screen_text": "حفظ زیبایی طبیعی",
+        "narration": "زیبایی طبیعی نیازمند توجه، علم و صبوری است."
+      },
+      {
+        "duration": 6,
+        "visual_prompt": "Aesthetic close-up of a delicate white flower in a ceramic vase sitting on a warm wooden reception counter in a luxury clinic, soft elegant morning sunlight, high-end feel, vertical 9:16 ratio --no text, logo, artificial look",
+        "on_screen_text": "جهت دریافت مشاوره، پیام دهید",
+        "narration": "برای مشاوره تخصصی و آشنایی با خدمات مرکز، به دایرکت ما پیام دهید."
+      }
+    ]
+  },
+  "scene_assets": [
+    {
+      "index": 1,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-525dac5c8a814fa39cf1aeea12f7cca8.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v6-test-001/narration-scene-01.mp3",
+      "text": "محیطی آرام و استاندارد"
+    },
+    {
+      "index": 2,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-7c47579595714dd28b499dd87c415a9c.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v6-test-001/narration-scene-02.mp3",
+      "text": "مشاوره تخصصی و فردی"
+    },
+    {
+      "index": 3,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-e7eaec0570e444e88c828172ed5160ed.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v6-test-001/narration-scene-03.mp3",
+      "text": "استانداردهای بین‌المللی و بهداشت"
+    },
+    {
+      "index": 4,
+      "duration": 7.0,
+      "video": null,
+      "image": "outputs/image-36f543f12fb54a1d973d97cabfb9f637.png",
+      "voice": "/home/runner/work/Aria-freelancer/Aria-freelancer/outputs/media/clinic-ad-v6-test-001/narration-scene-04.mp3",
+      "text": "مراقبت اصولی و علمی"
+    }
+  ],
+  "music": {
+    "ok": false,
+    "provider": "none",
+    "output": null,
+    "error": "music providers exhausted: suno_music: RuntimeError: Suno integration is intentionally not auto-configured because current API requires a public callback URL | kie_music: not registered | pollinations_audio: not registered | fal_music: not registered",
+    "skipped": true,
+    "reason": null
+  },
+  "final_video": "outputs/media/clinic-ad-v6-test-001/clinic-ad-v6-test-001.mp4",
+  "failures": [
+    {
+      "scene": 5,
+      "type": "visual",
+      "error": "visual QA rejected image: visual QA error: JSONDecodeError: Expecting property name enclosed in double quotes: line 3 column 15 (char 36)"
+    },
+    {
+      "scene": 6,
+      "type": "visual",
+      "error": "visual QA rejected image: visual QA error: JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "scene": 7,
+      "type": "visual",
+      "error": "visual QA rejected image: visual QA error: JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+    }
+  ]
+}
